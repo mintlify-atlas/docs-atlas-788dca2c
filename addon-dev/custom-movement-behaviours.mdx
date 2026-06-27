@@ -1,7 +1,7 @@
 ---
 title: "Custom Movement Behaviours: Block Actions on Contraptions"
 sidebarTitle: "Movement Behaviours"
-description: "Register a MovementBehaviour to give a block custom actions when it rides a Create contraption. Implement tick, startMoving, visitNewPosition, and rendering hooks."
+description: "Register a MovementBehaviour to give any block custom actions while riding a Create contraption. Implement tick, visitNewPosition, and rendering hooks."
 ---
 
 A `MovementBehaviour` (also called an Actor) defines what a block does while it is mounted on a moving contraption — a piston arm, a bearing platform, an elevator, and so on. When the contraption assembles, Create looks up each block's registered behaviour and calls its lifecycle methods every tick and whenever the contraption enters a new block position. Register a behaviour via `MovementBehaviour.REGISTRY`.

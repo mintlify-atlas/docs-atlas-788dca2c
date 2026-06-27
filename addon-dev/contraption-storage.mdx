@@ -1,7 +1,7 @@
 ---
-title: "Contraption Storage Types: Custom Inventories on Moving Contraptions"
+title: "Custom Contraption Storage for Moving Inventories in Create"
 sidebarTitle: "Contraption Storage"
-description: "Register MountedItemStorageType and MountedFluidStorageType to allow custom inventory blocks to retain and carry their contents when mounted on a Create contraption."
+description: "Register MountedItemStorageType or MountedFluidStorageType so custom blocks retain and carry their contents when assembled into a Create contraption."
 ---
 
 When a contraption assembles, Create scans every block in the structure and looks for a registered `MountedItemStorageType` or `MountedFluidStorageType` for it. If a match is found, the block's contents are serialised into the contraption entity for transport and restored when the contraption disassembles. By default, only Create's own storage blocks (vaults, chests, fluid tanks) participate in this system. Register your own storage types to extend this behaviour to custom blocks.

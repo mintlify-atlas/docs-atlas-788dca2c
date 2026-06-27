@@ -1,5 +1,5 @@
 ---
-title: "Get Started with Create: Your First Machine"
+title: "Get Started with Create Mod: Build Your First Machine"
 sidebarTitle: "First Steps"
 description: "Build your first Create machine from scratch. Craft a Hand Crank, connect shafts, and power a Mechanical Press through Create's rotational force system."
 ---
@@ -32,7 +32,7 @@ Every Create machine needs rotation to operate. The simplest source is the **Han
   <Step title="Craft Andesite Alloy">
     Open your crafting table. Place an **Iron Nugget** and a piece of **Andesite** anywhere in the 3×3 grid — the recipe is shapeless, so position does not matter. Each craft yields **2 Andesite Alloy**.
 
-    ```
+    ```text
     [Iron Nugget] [Andesite]
          ↓
     2× Andesite Alloy
@@ -48,7 +48,7 @@ Every Create machine needs rotation to operate. The simplest source is the **Han
   <Step title="Craft a Hand Crank">
     The Hand Crank recipe requires Andesite Alloy and wooden planks. Shape the following pattern in your crafting table:
 
-    ```
+    ```text
     [ Planks ] [  Planks ] [ Planks ]
     [  empty ] [ A.Alloy] [  empty ]
     [  empty ] [ A.Alloy] [  empty ]
@@ -105,7 +105,7 @@ The **Mechanical Press** is one of Create's earliest processing machines. Placed
     The Mechanical Press has a shaft input on its top face (the axis runs horizontally). Extend your existing Shaft line so that one Shaft passes through — or connects to — the Press's input axis. When the shaft network is spinning and rotation reaches the Press, the piston head will begin moving up and down.
 
     <Warning>
-      The Mechanical Press needs **at least 8 RPM** to operate. A single Hand Crank provides exactly enough. If the press piston does not move, check that the shaft is aligned to the correct axis and that there is no stress overload (all shafts in the network go grey when overloaded).
+      The Mechanical Press requires any non-zero rotation to operate — it will not move if the shaft network is stalled or overstressed. If the press piston does not move, check that the shaft is aligned to the correct axis and that there is no stress overload (all shafts in the network go grey when overloaded).
     </Warning>
   </Step>
 

@@ -1,7 +1,7 @@
 ---
 title: "Fan Processing: Bulk Item Processing with Air Streams"
 sidebarTitle: "Fan Processing"
-description: "Encased Fans push air streams that process items in bulk. Learn the built-in processing types — washing, smelting, smoking, and haunting — and how to automate them."
+description: "Encased Fans blow air streams that bulk-process items. Learn the four built-in types: splashing, blasting, smoking, and haunting, plus automation tips."
 ---
 
 An **Encased Fan** blowing air through a catalyst block creates a processing zone that transforms items passing through the stream. This is Create's primary mechanism for bulk item conversion — it's faster than furnace arrays, fully automatable, and extensible through the `FanProcessingType` API. The four built-in processing types each use a different catalyst block and a different recipe set, making the fan a versatile workhorse for smelting, washing, smoking, and more esoteric transformations.
@@ -49,9 +49,9 @@ Create ships with four processing types, each identified by the catalyst it chec
     Ignites non-fire-immune entities passing through the stream (10 seconds, 4 damage).
   </Card>
   <Card title="Smoking" icon="cloud">
-    **Catalyst:** Lit campfire, smouldering Blaze Burner, or any block/fluid matching the `#create:fan_processing_catalysts/smoking` tags
+    **Catalyst:** Fire, lit campfire, smouldering Blaze Burner, or any block/fluid matching the `#create:fan_processing_catalysts/smoking` tags
 
-    Applies **smoking recipes** (smoker recipes). Useful for cooking foods in bulk. The campfire must be lit — an unlit campfire does not activate this processing type.
+    Applies **smoking recipes** (smoker recipes). Useful for cooking foods in bulk. A campfire must be lit — an unlit campfire does not activate this processing type.
 
     Ignites non-fire-immune entities passing through the stream (2 seconds, 2 damage).
   </Card>

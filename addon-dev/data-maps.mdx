@@ -16,7 +16,7 @@ public class CreateDataMaps {
     /**
      * Item data map for regular (non-superheated) Blaze Burner fuels.
      *
-     * File path: data/<namespace>/neoforge/data_maps/item/create/regular_blaze_burner_fuels.json
+     * File path: data/<namespace>/data_maps/item/create/regular_blaze_burner_fuels.json
      *
      * Value fields:
      *   - burn_time (positive integer) — how long the item burns, in ticks
@@ -31,7 +31,7 @@ public class CreateDataMaps {
     /**
      * Item data map for superheated Blaze Burner fuels.
      *
-     * File path: data/<namespace>/neoforge/data_maps/item/create/superheated_blaze_burner_fuels.json
+     * File path: data/<namespace>/data_maps/item/create/superheated_blaze_burner_fuels.json
      *
      * Value fields:
      *   - burn_time (positive integer) — how long the item burns, in ticks
@@ -89,7 +89,7 @@ The two data maps differ only in **which burner mode they fuel**:
 Create the data map JSON file in your mod's resources. The path follows NeoForge's data map convention:
 
 ```
-src/main/resources/data/mymod/neoforge/data_maps/item/create/regular_blaze_burner_fuels.json
+src/main/resources/data/mymod/data_maps/item/create/regular_blaze_burner_fuels.json
 ```
 
 ```json
@@ -120,7 +120,7 @@ For item tags, prefix the key with `#`:
 To add a **superheated** fuel, use the `superheated_blaze_burner_fuels` map instead:
 
 ```
-data/mymod/neoforge/data_maps/item/create/superheated_blaze_burner_fuels.json
+data/mymod/data_maps/item/create/superheated_blaze_burner_fuels.json
 ```
 
 ```json

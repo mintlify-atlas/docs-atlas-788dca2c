@@ -1,7 +1,7 @@
 ---
 title: "Custom Fan Processing Types: Adding New Air Stream Recipes"
 sidebarTitle: "Fan Processing"
-description: "Register a custom FanProcessingType to add new catalyst blocks for Encased Fan air streams. Implement the type interface and register recipes using Create's data generation."
+description: "Implement and register FanProcessingType to add custom Encased Fan catalysts with data-driven item processing recipes for Create's air stream system."
 ---
 
 When an Encased Fan pushes an air stream through a catalyst block, items caught in the stream are transformed. Create ships four built-in processing types: **blasting** (lava or Blaze Burner), **haunting** (soul fire or Soul Blaze Burner), **smoking** (campfire or Blaze Burner at `SMOULDERING` heat), and **splashing** (water). Addon mods can register entirely new catalyst behaviours by implementing the `FanProcessingType` interface and registering it with Create's built-in registry.

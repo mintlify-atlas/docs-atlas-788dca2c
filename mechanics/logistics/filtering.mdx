@@ -1,10 +1,10 @@
 ---
 title: "Filtering Items: Attribute Filters and Item Matching"
 sidebarTitle: "Filtering"
-description: "Create's filter system controls which items flow through funnels, tunnels, and arms. Learn basic filters, attribute filters, list filters, and tag-based matching."
+description: "Create's filter system controls item flow through funnels, tunnels, and arms. Learn item stack filters, list filters, attribute filters, and tag matching."
 ---
 
-Filters control item flow by matching items against a set of criteria. They appear everywhere in Create's logistics layer — in Brass Funnels, Smart Chutes, Brass Tunnels, Mechanical Arms, and Stock Keepers. Mastering the filter system is the key to building sorted, waste-free item networks that only move what you intend.
+Filters control item flow by matching items against a set of criteria. They appear everywhere in Create's logistics layer — in Brass Funnels, Smart Chutes, Brass Tunnels, Mechanical Arms, and Stock Tickers. Mastering the filter system is the key to building sorted, waste-free item networks that only move what you intend.
 
 ## Filter Types
 
@@ -27,7 +27,7 @@ Create provides several filter items, each offering a different level of matchin
 
 ### Tag Filter (via Attribute Filter)
 
-The Attribute Filter includes a built-in **InTagAttribute** entry that lets you match all items sharing a specific item tag — for example, `#minecraft:logs` to match any log type, or `#forge:ingots/iron` to match all iron ingot variants. This is far more maintainable than listing every item individually, especially in modded environments where multiple mods add variants of the same material.
+The Attribute Filter includes a built-in **InTagAttribute** entry that lets you match all items sharing a specific item tag — for example, `#minecraft:logs` to match any log type, or `#c:ingots/iron` to match all iron ingot variants. This is far more maintainable than listing every item individually, especially in modded environments where multiple mods add variants of the same material.
 
 ## Applying Filters
 
@@ -58,19 +58,19 @@ The **Mechanical Arm** is Create's most flexible logistics actor. It picks up it
 
 This combination allows a single Mechanical Arm to sort an entire unsorted belt into multiple sorted destinations without any additional routing blocks.
 
-## Stock Keeper and Threshold Switch
+## Stock Ticker and Threshold Switch
 
 <CardGroup cols={2}>
   <Card title="Threshold Switch" icon="switch">
     Emits a redstone signal based on the item count in an adjacent inventory. Configure the threshold value and whether the signal is emitted when count is above or below that threshold. Useful for triggering automation only when a buffer is low or full.
   </Card>
-  <Card title="Stock Keeper" icon="clipboard">
-    Tracks an adjacent storage block and maintains a configured stock level for each item type. When stock of a configured item falls below its target quantity, the Stock Keeper automatically requests a replenishment package from linked Packagers. Uses the same filter items to define which items to track.
+  <Card title="Stock Ticker" icon="clipboard">
+    Tracks an adjacent storage block and maintains a configured stock level for each item type. When stock of a configured item falls below its target quantity, the Stock Ticker automatically requests a replenishment package from linked Packagers. Uses the same filter items to define which items to track.
   </Card>
 </CardGroup>
 
 <Info>
-  From version 6.0.10 onward, the Stock Keeper's Recipe Viewer integration supports four sync modes: **Disabled**, **From Viewer** (push requirements from JEI/REI into the keeper), **To Viewer** (show keeper contents in the viewer), and **Both**. This makes it easy to pull a recipe's ingredient list directly into a Stock Keeper's tracking configuration.
+  The Stock Ticker's Recipe Viewer integration supports four sync modes: **Disabled**, **From Viewer** (push requirements from JEI/REI into the ticker), **To Viewer** (show ticker contents in the viewer), and **Both**. This makes it easy to pull a recipe's ingredient list directly into a Stock Ticker's tracking configuration.
 </Info>
 
 <Tip>

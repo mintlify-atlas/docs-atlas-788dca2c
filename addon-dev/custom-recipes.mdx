@@ -1,7 +1,7 @@
 ---
 title: "Custom Recipes for Create: Data Generation and Processing"
 sidebarTitle: "Custom Recipes"
-description: "Add custom recipes for Create's processing machines using BaseRecipeProvider and StandardProcessingRecipeGen. Generate JSON recipe files with Create's data gen helpers."
+description: "Extend BaseRecipeProvider or StandardProcessingRecipeGen to generate JSON recipes for Create's processing machines during your mod's data-gen phase."
 ---
 
 Create's recipe system is entirely data-driven: every machine recipe is a JSON file loaded from a datapack. Addon mods can add recipes for Create's existing machines or introduce entirely new processing recipe types by extending Create's data-generation helpers. There is no need to touch Java code at runtime — you generate the JSON files during your mod's data-gen phase, and the game loads them like any other datapack.

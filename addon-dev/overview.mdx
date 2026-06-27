@@ -1,26 +1,28 @@
 ---
-title: "Addon Development for Create: Getting Started"
+title: "Create Mod Addon Development: Getting Started Guide"
 sidebarTitle: "Overview"
-description: "Build addons for the Create mod using NeoForge's event system and Create's Java API. Learn how to depend on Create, access its registries, and extend its core systems."
+description: "Build addons for the Create mod using NeoForge and Create's Java API. Depend on Create, access its registries, and extend its core systems."
 ---
 
 Create exposes a stable Java API under the `com.simibubi.create.api` package that addon mods can use to extend its systems — movement behaviours, fan processing, contraption storage, stress values, recipes, and more. The API is designed to be consumed by third-party mods targeting NeoForge and covers nearly every point where Create's behaviour can be customised or augmented.
 
 ## Adding Create as a dependency
 
-Add Create to your `build.gradle` dependencies block. Always use the variant that matches your target Minecraft and NeoForge versions. The `slim` classifier excludes runtime assets you don't need at compile time.
+Add Create to your `build.gradle` repositories and dependencies blocks. Always use the version that matches your target Minecraft and NeoForge versions. The `slim` classifier excludes runtime assets you don't need at compile time.
 
 ```groovy build.gradle
+repositories {
+    maven { url = "https://maven.createmod.net" }
+}
+
 dependencies {
     // Create for NeoForge — use the version matching your target Minecraft/NeoForge
-    implementation fg.deobf("com.simibubi.create:create-1.21.1:6.0.11:slim") { transitive = false }
-    // Or via maven (createmod.net maven)
-    // maven { url 'https://maven.createmod.net' }
+    implementation("com.simibubi.create:create-1.21.1:6.0.11:slim") { transitive = false }
 }
 ```
 
 <Note>
-  The current stable release is **6.0.11** targeting Minecraft **1.21.1** with NeoForge **21.1.219**. Check [maven.createmod.net](https://maven.createmod.net) for the latest versions.
+  The current stable release is **6.0.11** targeting Minecraft **1.21.1** with NeoForge **21.1.219**. Check [maven.createmod.net](https://maven.createmod.net) for the latest versions. NeoForge projects use NeoGradle — the `fg.deobf()` wrapper from old ForgeGradle is not needed.
 </Note>
 
 ## API package structure

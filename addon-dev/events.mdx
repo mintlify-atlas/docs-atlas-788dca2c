@@ -1,7 +1,7 @@
 ---
 title: "Create NeoForge Events: Hooking Into Create's Lifecycle"
 sidebarTitle: "Events"
-description: "Create fires NeoForge events for block entity behaviour attachment, pipe collisions, and track graph merges. Subscribe to these events to extend Create's blocks and systems."
+description: "Subscribe to NeoForge events fired by Create to attach block entity behaviours, intercept fluid pipe collisions, and respond to train graph merges."
 ---
 
 Create fires NeoForge bus events at key lifecycle points so that addon mods can observe and extend its behaviour without modifying internal classes. All events in `com.simibubi.create.api.event` are stable public API and are posted on the **NeoForge event bus** (not the mod bus).
@@ -146,7 +146,8 @@ All three events are posted on the **NeoForge event bus**, not the mod-loading b
 
 ```java
 // Option A — annotation-based (static methods)
-@Mod.EventBusSubscriber(modid = "mymod", bus = Mod.EventBusSubscriber.Bus.NEOFORGE)
+// @EventBusSubscriber defaults to the NeoForge game event bus
+@EventBusSubscriber(modid = "mymod")
 public class MyEventHandlers {
     @SubscribeEvent
     public static void onBehaviourEvent(BlockEntityBehaviourEvent event) {

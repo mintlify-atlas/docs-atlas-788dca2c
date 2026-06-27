@@ -52,12 +52,16 @@ public class MyFanProcessingTypes {
     public static final DeferredRegister<FanProcessingType> REGISTER =
         DeferredRegister.create(CreateRegistries.FAN_PROCESSING_TYPE, "mymod");
 
-    public static final RegistryObject<FanProcessingType> MY_TYPE =
+    public static final Holder<FanProcessingType> MY_TYPE =
         REGISTER.register("my_type", () -> new MyFanProcessingType());
+
+    public static void register(IEventBus modEventBus) {
+        REGISTER.register(modEventBus);
+    }
 }
 ```
 
-Then call `REGISTER.register(modEventBus)` in your mod constructor or `FMLJavaModLoadingContext`.
+Call `MyFanProcessingTypes.register(modEventBus)` from your mod constructor, passing the `IEventBus` that NeoForge injects via `@Mod`.
 
 ## SimpleRegistry
 

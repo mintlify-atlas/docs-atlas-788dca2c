@@ -73,6 +73,13 @@ Create blocks fire computer events by calling `AbstractComputerBehaviour.prepare
   </Card>
   <Card title="RepackageEvent" icon="box">
     Fired when a package is repackaged by a Package Port.
+
+    ```java
+    public class RepackageEvent implements ComputerEvent {
+        public @NotNull ItemStack box;
+        public int count;
+    }
+    ```
   </Card>
 </CardGroup>
 

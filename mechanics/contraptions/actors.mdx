@@ -1,7 +1,7 @@
 ---
-title: "Contraption Actors: Behaviour While Moving"
+title: "Contraption Actors: Active Blocks That Work While Moving"
 sidebarTitle: "Actors"
-description: "Actors are blocks on a contraption that perform actions at every position they visit — drilling, harvesting, placing, and more. Learn which blocks act and how to configure them."
+description: "Actors are contraption blocks that work at every position they pass: drills mine, harvesters collect crops, deployers interact. Learn to configure each one."
 ---
 
 When a contraption moves through the world, most of its blocks simply ride along passively. But certain blocks — called **actors** (or internally, `MovementBehaviour` implementations) — are active participants: they perform a specific action at every world position the contraption passes through. A Mechanical Drill breaks the block at each new position. A Mechanical Harvester strips mature crops. A Deployer simulates a player interaction at every grid square the contraption visits.
@@ -92,7 +92,7 @@ Sometimes you want a contraption to move without its actors firing — for examp
 
 **Wrench.** Right-click any actor block on a stationary contraption with a Wrench to toggle that individual actor off. A disabled actor still travels with the contraption but does not perform its action.
 
-**Contraption Controls (Redstone).** A Contraption Controls block (also called a Redstone Contraption Controller or lectern-style controller) mounted on the contraption can receive a redstone signal and disable all actors simultaneously. Wire it to a Redstone Contact or a Signal Activator at a fixed position in the world to automatically disable actors during the return stroke.
+**Contraption Controls (Redstone).** A Contraption Controls block (also called a Redstone Contraption Controller or lectern-style controller) mounted on the contraption can receive a redstone signal and disable all actors simultaneously. Wire it to a Redstone Contact at a fixed position in the world to automatically disable actors during the return stroke.
 
 ---
 

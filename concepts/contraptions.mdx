@@ -1,7 +1,7 @@
 ---
-title: "Contraptions: Moving Structures in Create"
+title: "Contraptions: Moving Multi-Block Structures in Create Mod"
 sidebarTitle: "Contraptions"
-description: "Contraptions are assemblies of blocks that move together — pushed by pistons, rotated by bearings, or carried by trains. Learn how they work and what limits apply."
+description: "Contraptions are multi-block structures that move as one unit — pushed by pistons, rotated by bearings, or carried by trains. Learn assembly rules."
 ---
 
 A **contraption** is a multi-block structure that moves as a single rigid unit. When a mechanical mover assembles a contraption, it lifts a collection of connected blocks out of the world, turns them into a single moving entity, and carries them — along with any block entities, stored items, seated passengers, and active actors — through the world. When the contraption disassembles, every block is placed back exactly where it ended up. This system is the engine behind Create's most spectacular builds: rotating sawmills, travelling drills, moving bridges, flying airships, and underground mining platforms.
@@ -150,9 +150,9 @@ All values below come from `CKinetics.java` and can be adjusted in the mod's `ki
 | `maxChassisRange` | `16` | Maximum attachment range of a Chassis block |
 | `maxPistonPoles` | `64` | Maximum Extension Poles behind a Mechanical Piston |
 | `maxRopeLength` | `384` | Maximum rope length for a Rope Pulley (blocks) |
-| `spawnerMovement` | `NO_PICKUP` | Movement setting for Mob Spawner blocks |
-| `obsidianMovement` | `UNMOVABLE` | Movement setting for Obsidian blocks |
-| `reinforcedDeepslateMovement` | `UNMOVABLE` | Movement setting for Reinforced Deepslate blocks |
+| `movableSpawners` | `NO_PICKUP` | Movement setting for Mob Spawner blocks |
+| `movableObsidian` | `UNMOVABLE` | Movement setting for Obsidian blocks |
+| `movableReinforcedDeepslate` | `UNMOVABLE` | Movement setting for Reinforced Deepslate blocks |
 | `amethystMovement` | `NO_PICKUP` | Movement setting for Budding Amethyst blocks |
 | `moveItemsToStorage` | `true` | Whether mined/harvested items are auto-deposited into on-board storage |
 | `survivalContraptionPickup` | `true` | Whether Minecart Contraptions can be picked up by players in survival mode |

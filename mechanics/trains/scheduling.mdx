@@ -1,5 +1,5 @@
 ---
-title: "Train Scheduling: Automating Routes and Stops"
+title: "Train Scheduling: Automate Routes, Stops, and Cargo"
 sidebarTitle: "Scheduling"
 description: "Create's schedule system programs trains to follow routes, load/unload at stations, wait for conditions, and run automatically without a driver."
 ---
@@ -107,17 +107,17 @@ The same principle applies to fluid tanks — use Fluid Pipes with a Portable Fl
 
 ## CC:Tweaked Integration
 
-When CC:Tweaked is installed, both the Station block and the Signal block become computer peripherals. The `StationBlockEntity` fires named events to attached computers via `AbstractComputerBehaviour`:
+When CC:Tweaked is installed, the Station block (`Create_Station` peripheral), Signal block (`Create_TrackSignal` peripheral), and Train Observer block (`Create_TrackObserver` peripheral) all become computer peripherals. Each fires named events to attached computers:
 
-| Event | Fired When |
+| CC Event Name | Fired When |
 |---|---|
-| `StationTrainPresenceEvent` (IMMINENT) | A train begins navigating toward this station |
-| `StationTrainPresenceEvent` (ARRIVAL) | A train arrives and stops at this station |
-| `StationTrainPresenceEvent` (DEPARTURE) | A train departs from this station |
+| `train_imminent` | A train begins navigating toward this station |
+| `train_arrival` | A train arrives and stops at this station |
+| `train_departure` | A train departs from this station |
 
 Computers can listen for these events and respond — opening gates, triggering announcements, logging arrivals, or even sending redstone signals to condition other trains.
 
-For signal-side integration, `SignalStateChangeEvent` fires whenever a signal transitions between RED, YELLOW, and GREEN states. See the compatibility documentation for full peripheral API details.
+For signal-side integration, the `train_signal_state_change` event fires whenever a signal transitions between `RED`, `YELLOW`, `GREEN`, and `INVALID` states. The Train Observer fires `train_passing` when a train enters the observed section and `train_passed` when it exits. See the compatibility documentation for full peripheral API details.
 
 ## Tutorial: A Complete Automated Cargo Route
 

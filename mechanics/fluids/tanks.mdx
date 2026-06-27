@@ -1,7 +1,7 @@
 ---
 title: "Fluid Tanks: Storing and Connecting Fluid in Create"
 sidebarTitle: "Tanks"
-description: "Create's fluid tanks merge into multi-block structures for large-scale storage. Learn tank connectivity, capacity, and how to read fluid levels with gauges."
+description: "Create's fluid tanks merge into multi-block structures for large-scale storage. Learn tank connectivity, capacity, and how to read fluid levels."
 ---
 
 Create's **Fluid Tank** is a single-block storage unit that automatically merges with adjacent tanks to form a larger, shared reservoir. A lone tank holds a modest amount of fluid; a cluster of tanks arranged in a rectangular prism shares one unified pool with a capacity equal to the sum of all its parts. This makes Fluid Tanks equally useful as a compact buffer or as the centrepiece of an industrial fluid storage array.
@@ -86,6 +86,3 @@ When a **Blaze Burner** is placed beneath a Fluid Tank (or a stack of them), the
 
 A **Smart Fluid Pipe** placed adjacent to a tank acts as a filtered inlet or outlet. Configure the pipe's filter slot with a specific fluid type; only that fluid is permitted to flow through the pipe in either direction. This prevents accidentally mixing fluids when multiple tanks sharing a pipe junction contain different liquids.
 
-<Note>
-  In version 6.0.10, an edge-case bug was fixed where tanks would fail to notify neighbouring blocks of a fluid change under certain conditions (#8535). If you are running an older version and notice Comparators or Gauges not updating correctly, updating to 6.0.10 or later resolves the issue.
-</Note>
