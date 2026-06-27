@@ -1,0 +1,151 @@
+---
+title: "Stress Values: Registering Impact and Capacity for Custom Blocks"
+sidebarTitle: "Stress Values"
+description: "Use BlockStressValues to register stress impact and capacity for custom kinetic blocks, and set the RPM generation value shown in Goggle tooltips."
+---
+
+The stress system gives every kinetic network a finite power budget. Consumers (grinders, saws, etc.) draw from it; generators (water wheels, windmills) add to it. `BlockStressValues` exposes three `SimpleRegistry` instances that map blocks to their kinetic properties. You register values during mod initialisation — before the first world is loaded — so that Create can resolve them when building kinetic networks.
+
+## The Three Registries
+
+All three are static constants on `com.simibubi.create.api.stress.BlockStressValues`:
+
+```java
+public class BlockStressValues {
+
+    /**
+     * Registry for suppliers of stress impacts.
+     * Determines the base stress impact at 1 RPM for a consumer block.
+     * Actual impact = impact × current RPM.
+     */
+    public static final SimpleRegistry<Block, DoubleSupplier> IMPACTS = SimpleRegistry.create();
+
+    /**
+     * Registry for suppliers of stress capacities.
+     * Determines the base stress capacity at 1 RPM for a generator block.
+     * Actual capacity = capacity × current RPM.
+     */
+    public static final SimpleRegistry<Block, DoubleSupplier> CAPACITIES = SimpleRegistry.create();
+
+    /**
+     * Registry for generator RPM tooltip data.
+     * This is only used for Goggle tooltip display — it has no effect on actual
+     * kinetic behaviour. Actual RPM is determined by the block itself.
+     */
+    public static final SimpleRegistry<Block, GeneratedRpm> RPM = SimpleRegistry.create();
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Look up the current impact of a block (0 if not registered). */
+    public static double getImpact(Block block) { ... }
+
+    /** Look up the current capacity of a block (0 if not registered). */
+    public static double getCapacity(Block block) { ... }
+
+    // ── GeneratedRpm record ───────────────────────────────────────────────────
+
+    /**
+     * @param value          The RPM value to advertise in Goggle tooltips.
+     * @param mayGenerateLess true if the block can generate less than {@code value}
+     *                        under certain conditions (e.g. low wind speed).
+     */
+    public record GeneratedRpm(int value, boolean mayGenerateLess) {}
+}
+```
+
+<Info>
+  **SU scales linearly with RPM.** A block with a base impact of `4.0` draws `4 × RPM` stress units at the given speed. The config values `mediumStressImpact` (default 4 SU) and `highStressImpact` (default 8 SU) are classification thresholds used only for colour-coded Goggle tooltips.
+</Info>
+
+## Registering Stress Impact and Capacity
+
+Call `IMPACTS.register` / `CAPACITIES.register` any time before the first world is loaded — typically in a `FMLCommonSetupEvent` listener or directly in your mod's static initialiser:
+
+```java
+import com.simibubi.create.api.stress.BlockStressValues;
+
+// In your CommonSetup or mod init:
+BlockStressValues.IMPACTS.register(MyBlocks.MY_MACHINE.get(), () -> 4.0);
+BlockStressValues.CAPACITIES.register(MyBlocks.MY_GENERATOR.get(), () -> 128.0);
+```
+
+Because the second argument is a `DoubleSupplier` (a functional interface), you can make the value **dynamic** — for example, reading from a config value:
+
+```java
+BlockStressValues.IMPACTS.register(
+    MyBlocks.MY_MACHINE.get(),
+    () -> MyConfig.SERVER.machineStressImpact.get()
+);
+```
+
+<Tip>
+  Using a `DoubleSupplier` lambda that reads from your config object means the stress value updates automatically when the player changes the config without requiring a restart.
+</Tip>
+
+## Registering Generator RPM
+
+Two static helper methods on `BlockStressValues` produce a `NonNullConsumer<Block>` suitable for use with Registrate's `onRegister` callback:
+
+```java
+/**
+ * Register a fixed RPM value for a generator block (mayGenerateLess = false).
+ * Use when the block always produces exactly this many RPM.
+ */
+public static NonNullConsumer<Block> setGeneratorSpeed(int value) {
+    return block -> RPM.register(block, new GeneratedRpm(value, false));
+}
+
+/**
+ * Register an RPM value with an optional "may generate less" flag.
+ * Set mayGenerateLess = true for blocks like windmills that can run slower
+ * depending on conditions.
+ */
+public static NonNullConsumer<Block> setGeneratorSpeed(int value, boolean mayGenerateLess) {
+    return block -> RPM.register(block, new GeneratedRpm(value, mayGenerateLess));
+}
+```
+
+Usage with Registrate:
+
+```java
+// Fixed RPM — always generates exactly 16 RPM:
+MyBlocks.MY_WINDMILL.onRegister(BlockStressValues.setGeneratorSpeed(16));
+
+// Variable — advertises up to 64 RPM but may generate less:
+MyBlocks.MY_TURBINE.onRegister(BlockStressValues.setGeneratorSpeed(64, true));
+```
+
+Usage without Registrate (call after your block is registered):
+
+```java
+BlockStressValues.RPM.register(
+    MyBlocks.MY_WINDMILL.get(),
+    new BlockStressValues.GeneratedRpm(16, false)
+);
+```
+
+## How SU Scales with RPM
+
+Create's kinetic stress model is intentionally simple:
+
+| Quantity | Formula |
+|---|---|
+| Actual consumer draw | `baseImpact × currentRPM` SU |
+| Actual generator supply | `baseCapacity × currentRPM` SU |
+
+A generator block with a base capacity of `128.0` and running at `16 RPM` provides `128 × 16 = 2048 SU` of capacity to its network.
+
+### Config Classification Thresholds (CKinetics)
+
+These thresholds affect **Goggle tooltip colour-coding** only — they do not affect gameplay:
+
+| Config key | Default | Meaning |
+|---|---|---|
+| `mediumStressImpact` | 4 SU | Impact ≥ this → yellow indicator |
+| `highStressImpact` | 8 SU | Impact ≥ this → red indicator |
+| `mediumCapacity` | 256 SU | Capacity ≥ this → yellow indicator |
+| `highCapacity` | 1024 SU | Capacity ≥ this → green indicator |
+
+<Note>
+  The `RPM` registry affects only the **tooltip** shown when wearing Goggles — it has no effect on the speed actually produced by the block. Real RPM generation is controlled entirely by your block's kinetic implementation.
+</Note>

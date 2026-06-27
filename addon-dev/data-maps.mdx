@@ -1,0 +1,188 @@
+---
+title: "Create Data Maps: Tag-Driven Block and Item Properties"
+sidebarTitle: "Data Maps"
+description: "Create uses NeoForge data maps for BlazeBurner fuel and other data-driven properties. Learn how to add entries for custom items and blocks."
+---
+
+Create uses NeoForge data maps to attach data-driven properties to items without maintaining hardcoded lists. A NeoForge data map is essentially a datapack-driven lookup table: entries are loaded from JSON files during world load and can be added or overridden by any mod or datapack without touching Java code. The `CreateDataMaps` class provides the two public data map type keys that Create defines.
+
+## Available Data Maps
+
+`com.simibubi.create.api.registry.CreateDataMaps` declares both data map type constants:
+
+```java
+public class CreateDataMaps {
+
+    /**
+     * Item data map for regular (non-superheated) Blaze Burner fuels.
+     *
+     * File path: data/<namespace>/neoforge/data_maps/item/create/regular_blaze_burner_fuels.json
+     *
+     * Value fields:
+     *   - burn_time (positive integer) — how long the item burns, in ticks
+     */
+    public static final DataMapType<Item, BlazeBurnerFuel> REGULAR_BLAZE_BURNER_FUELS =
+        DataMapType.builder(
+            Create.asResource("regular_blaze_burner_fuels"),
+            Registries.ITEM,
+            BlazeBurnerFuel.CODEC
+        ).build();
+
+    /**
+     * Item data map for superheated Blaze Burner fuels.
+     *
+     * File path: data/<namespace>/neoforge/data_maps/item/create/superheated_blaze_burner_fuels.json
+     *
+     * Value fields:
+     *   - burn_time (positive integer) — how long the item burns, in ticks
+     */
+    public static final DataMapType<Item, BlazeBurnerFuel> SUPERHEATED_BLAZE_BURNER_FUELS =
+        DataMapType.builder(
+            Create.asResource("superheated_blaze_burner_fuels"),
+            Registries.ITEM,
+            BlazeBurnerFuel.CODEC
+        ).build();
+}
+```
+
+### BlazeBurnerFuel
+
+`com.simibubi.create.api.data.datamaps.BlazeBurnerFuel` is the value type stored in both fuel data maps:
+
+```java
+/**
+ * Data map value for Blaze Burner fuels.
+ *
+ * @param burnTime How long (in ticks) the item will burn for.
+ */
+public record BlazeBurnerFuel(int burnTime) {
+
+    /**
+     * Short-form codec: accepts a bare positive integer directly as burn_time.
+     * Discouraged — use the object form to stay forward-compatible.
+     */
+    public static final Codec<BlazeBurnerFuel> BURN_TIME_CODEC = ExtraCodecs.POSITIVE_INT
+        .xmap(BlazeBurnerFuel::new, BlazeBurnerFuel::burnTime);
+
+    /**
+     * Primary codec: accepts { "burn_time": <positive int> } objects,
+     * with a fallback to the bare integer form.
+     */
+    public static final Codec<BlazeBurnerFuel> CODEC = Codec.withAlternative(
+        RecordCodecBuilder.create(i -> i.group(
+            ExtraCodecs.POSITIVE_INT.fieldOf("burn_time").forGetter(BlazeBurnerFuel::burnTime)
+        ).apply(i, BlazeBurnerFuel::new)),
+        BURN_TIME_CODEC
+    );
+}
+```
+
+The two data maps differ only in **which burner mode they fuel**:
+
+| Data map | Fuels burner mode |
+|---|---|
+| `REGULAR_BLAZE_BURNER_FUELS` | Regular flame (kindled / smouldering heat) |
+| `SUPERHEATED_BLAZE_BURNER_FUELS` | Superheated flame (seething / hellish heat) |
+
+## Adding a Custom Fuel
+
+Create the data map JSON file in your mod's resources. The path follows NeoForge's data map convention:
+
+```
+src/main/resources/data/mymod/neoforge/data_maps/item/create/regular_blaze_burner_fuels.json
+```
+
+```json
+{
+  "values": {
+    "mymod:my_coal_variant": {
+      "burn_time": 1600
+    },
+    "mymod:compressed_blaze_powder": {
+      "burn_time": 4800
+    }
+  }
+}
+```
+
+For item tags, prefix the key with `#`:
+
+```json
+{
+  "values": {
+    "#mymod:blaze_fuels": {
+      "burn_time": 2400
+    }
+  }
+}
+```
+
+To add a **superheated** fuel, use the `superheated_blaze_burner_fuels` map instead:
+
+```
+data/mymod/neoforge/data_maps/item/create/superheated_blaze_burner_fuels.json
+```
+
+```json
+{
+  "values": {
+    "mymod:blazing_gem": {
+      "burn_time": 9600
+    }
+  }
+}
+```
+
+<Info>
+  The bare-integer shorthand (`"mymod:my_item": 1600`) is also accepted by the codec but is **discouraged** in case `BlazeBurnerFuel` gains additional fields in a future Create version. Use the object form `{ "burn_time": 1600 }` to stay forward-compatible.
+</Info>
+
+## Removing or Overriding Entries
+
+NeoForge data maps support a `remove` array to remove entries from other mods:
+
+```json
+{
+  "values": {
+    "mymod:better_coal": { "burn_time": 2000 }
+  },
+  "remove": [
+    "minecraft:coal"
+  ]
+}
+```
+
+## Querying Data Maps in Code
+
+To read the fuel data for an item at runtime (server-side):
+
+```java
+import com.simibubi.create.api.registry.CreateDataMaps;
+import com.simibubi.create.api.data.datamaps.BlazeBurnerFuel;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.registries.datamaps.DataMapType;
+
+ItemStack stack = /* ... */;
+BlazeBurnerFuel fuel = stack.getItem()
+    .builtInRegistryHolder()
+    .getData(CreateDataMaps.REGULAR_BLAZE_BURNER_FUELS);
+
+if (fuel != null) {
+    int ticks = fuel.burnTime(); // e.g. 1600
+}
+```
+
+## Custom Data Maps for Your Addon
+
+Create's data maps are just one application of NeoForge's data map system. Your addon can define entirely independent data maps for its own items and blocks using the same `DataMapType.builder(...)` API. Register your data map type during your mod's `RegisterDataMapTypesEvent`:
+
+```java
+@SubscribeEvent
+public static void onRegisterDataMaps(RegisterDataMapTypesEvent event) {
+    event.register(MyDataMaps.MY_CUSTOM_MAP);
+}
+```
+
+<Tip>
+  Use data maps instead of hardcoded item lists wherever possible. Another mod adding new ore types or fuel items can simply contribute a small JSON file to participate — no Java code required on either side.
+</Tip>

@@ -1,24 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
-  "name": "Createmod",
+  "projectType": "general",
+  "projectName": "Create",
+  "projectDescription": "A NeoForge Minecraft mod providing building tools, kinetic machinery, fluid systems, logistics automation, and a railway network for aesthetic technology-driven gameplay.",
   "theme": "maple",
-  "colors": {
-    "primary": "#c96c5a",
-    "light": "#e7dfcd",
-    "dark": "#547ca8"
-  },
-  "favicon": "https://media.brand.dev/50aaf608-6d62-43a9-9930-b4301573d667.png",
-  "navbar": {
-    "primary": {
-      "type": "github",
-      "href": "https://github.com/Creators-of-Create/Create"
-    }
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/Creators-of-Create/Create"
-    }
-  },
+  "primaryColor": "#c96c5a",
+  "lightColor": "#e7dfcd",
+  "darkColor": "#547ca8",
   "navigation": {
     "tabs": [
       {
@@ -125,5 +112,38 @@
         ]
       }
     ]
-  }
+  },
+  "keyFeatures": [
+    "Rotational kinetic network with stress-capacity balance",
+    "Moving contraptions (pistons, bearings, elevators, trains)",
+    "Fluid piping, pumps, and tank connectivity",
+    "Logistics automation (belts, funnels, filters, packaging)",
+    "Full train/railway system with scheduling and signals",
+    "In-game interactive Ponder documentation system",
+    "Rich addon API for extending contraptions, recipes, and registries",
+    "CC: Tweaked (ComputerCraft) integration for scripted automation",
+    "Schematic and quill for blueprint saving and placement",
+    "JEI/REI recipe viewer integration"
+  ],
+  "publicApiSurface": [
+    "BlockMovementChecks — register/query contraption movement rules",
+    "MovementBehaviour / MovementBehaviour.REGISTRY — actor behaviors on contraptions",
+    "BlockStressValues.IMPACTS / CAPACITIES / RPM — stress registries",
+    "CreateRegistries — ResourceKeys for all Create registries",
+    "CreateBuiltInRegistries — built-in registry instances",
+    "FanProcessingType — register custom fan processing recipes",
+    "MountedItemStorageType / MountedFluidStorageType — contraption storage types",
+    "ContraptionType — register custom contraption types",
+    "DisplaySource / DisplayTarget — display link integration",
+    "PotatoCannonProjectileType — custom potato cannon projectiles",
+    "BlockEntityBehaviourEvent — attach behaviours to SmartBlockEntities",
+    "PipeCollisionEvent — fluid pipe collision callbacks",
+    "TrackGraphMergeEvent — railway graph merge callbacks",
+    "BlockSpoutingBehaviour / CauldronSpoutingBehavior — spout interactions",
+    "BaseRecipeProvider / StandardProcessingRecipeGen — addon recipe data providers",
+    "SafeNbtWriterRegistry / SchematicRequirementRegistries — schematic extensions",
+    "ConnectivityHandler — fluid/tank connectivity API",
+    "BoilerHeater — register custom boiler heat sources",
+    "IHaveGoggleInformation / IHaveHoveringInformation — goggle overlay info"
+  ]
 }

@@ -1,0 +1,98 @@
+---
+title: "Transmitting Rotation: Shafts, Gears, and Belts"
+sidebarTitle: "Transmission"
+description: "Connect and redirect rotational force using shafts, gears, chain drives, and belt pulleys. Learn gear ratios, direction changes, and long-distance power transfer."
+---
+
+Generating rotation is only half the job. Getting that rotation to the right place, at the right speed, and in the right direction is the work of Create's transmission blocks. Shafts carry power along a single axis, gears change speed and direction, belts bridge gaps and move items at the same time, and chain drives link parallel shafts without speed loss. Understanding how these pieces fit together lets you build compact, efficient kinetic networks without accidental conflicts.
+
+<Info>
+  All transmission blocks obey the same fundamental rule: two shafts only connect if they share the same axis. A shaft facing east–west will never exchange rotation with one facing north–south, even if they are touching.
+</Info>
+
+---
+
+## Shafts
+
+The Shaft is the basic carrier of rotational force. A shaft transmits rotation along its own axis to any adjacent shaft-like block (another Shaft, a cogwheel, a source block) that shares that axis.
+
+**Encased Shaft.** The Encased Shaft is mechanically identical to a plain Shaft but is visually enclosed in andesite casing, making it safe to pass through floors, ceilings, and walls without accidentally connecting to nearby shafts on other axes. Use encased shafts whenever a line of rotation needs to cross through a block that might otherwise intercept it.
+
+**Axis alignment.** Two shafts that meet perpendicularly do **not** connect. A north–south shaft touching an east–west shaft at a corner is not a valid connection; rotation does not cross an axis boundary except through a Gearbox or Large Cogwheel pair.
+
+<Warning>
+  Placing a shaft so that it touches another shaft on a different axis will show them overlapping visually, but no rotation will pass between them. Use Goggles (see the tip below) to verify that a connection is actually active.
+</Warning>
+
+---
+
+## Gearboxes
+
+A Gearbox is a compact 1-block device that accepts rotation on one face and outputs it on up to three perpendicular faces simultaneously, reversing the direction of rotation on each output. This makes it the go-to tool for both 90° redirection and for driving multiple shafts from a single source.
+
+**Large Cogwheel + Small Cogwheel pairs.** Placing a Large Cogwheel meshing against a Small Cogwheel (or vice versa) creates a 2:1 gear ratio:
+
+- Large drives Small → speed **doubles**, SU impact doubles.
+- Small drives Large → speed **halves**, SU impact halves.
+
+The two cogwheels must be on parallel but offset axes (one block apart perpendicularly) so their teeth mesh. A Large Cogwheel can also mesh with another Large Cogwheel to reverse direction at the same speed, and a Small Cogwheel can do the same.
+
+<Note>
+  Gear ratios compound. Two consecutive Large→Small pairs multiply speed by 4×. Keep an eye on your network's maximum speed (`maxRotationSpeed = 256 RPM` by default) — exceeding it will cause the kinetic block to break.
+</Note>
+
+---
+
+## Chain Drive
+
+Chain Drives link parallel shafts that are too far apart to touch directly, transmitting rotation at the **same speed and direction** as the source. This makes them ideal for distributing a generator's output to multiple machines arranged side by side.
+
+**How to connect.** Place Chain Drive blocks on the shafts you want to link; they must all share the same axis and face. Right-click with a Wrench to set the connection direction. Up to **4 connections** per chain conveyor block are allowed (controlled by the `maxChainConveyorConnections` config, default 4), and each connection can span up to `maxChainConveyorLength = 32` blocks.
+
+**Direction and speed.** Every shaft in a chain drive network spins at the same RPM and in the same direction as the driving source. There is no speed step-up or step-down; use cogwheel pairs if you need a ratio change before or after the chain.
+
+---
+
+## Belt Pulley
+
+A Mechanical Belt stretches between two Belt Pulley blocks to carry both rotation and items across a gap. Belts are the primary way to move items between processing machines without funnels and hoppers, and they also serve as a transmission element for moderate-length runs.
+
+**Length limit.** A belt can span at most **20 blocks** between its two pulleys (`maxBeltLength` config, default 20). The pulleys must be on parallel shafts facing the same direction; you cannot run a belt diagonally.
+
+**Item transport.** Items placed or dropped onto a belt's surface ride along it at a speed proportional to the belt's RPM. Faster belts move items more quickly but do not change processing priority. Funnels, chutes, and depots can feed items onto or off a belt at any position.
+
+**Transmission.** One pulley acts as the driver and the other as the follower, so a belt can also carry rotation from a source shaft to a distant consumer shaft. The driven end rotates at the same speed as the driving end with no ratio change.
+
+<Tip>
+  Use an Encased Belt instead of a plain Mechanical Belt when you want to hide the belt inside a wall or floor without items falling off. Encased belts do not expose an item-carrying surface.
+</Tip>
+
+---
+
+## Rotation Speed Controller
+
+The Rotation Speed Controller lets you set a precise RPM on one segment of a network regardless of what the rest of the network is running at. It must be attached to a Large Cogwheel that is already receiving rotation.
+
+**How it works.** Scroll the value dial while holding an empty hand or use a Wrench to set the target RPM. The controller outputs that exact speed on the shaft it faces, decoupled from the input speed. The stress impact scales with the ratio between input and output: stepping speed up costs proportionally more SU.
+
+**Use cases.** Fine-tune a processing machine that requires a specific speed threshold, or safely overdrive one branch of a network without affecting the rest.
+
+---
+
+## Gantry Shaft and Carriage
+
+The Gantry Shaft is a specialised transmission block that acts as a linear track. A Gantry Carriage sits on that track and slides along it when the shaft rotates. Any structure attached to the carriage moves with it, enabling Create's most precise linear automation.
+
+**How it works.** Place Gantry Shaft blocks end-to-end in a straight line and power one end with rotation. A Gantry Carriage block placed against the side of the shaft will travel along it at a rate proportional to RPM, carrying any blocks attached to it as a contraption.
+
+**Transmission aspect.** The carriage also passes rotation through itself, so you can chain gantry systems — one carriage on an X-axis shaft can carry a second gantry shaft running along the Y-axis, enabling two-axis movement for complex builds like plotters or robotic arms.
+
+---
+
+## Reading Rotation Direction
+
+<Tip>
+  Wear a pair of **Engineer's Goggles** and look at any spinning shaft or cogwheel. Blocks spinning toward you are tinted **blue**; blocks spinning away are tinted **red**. This colour coding makes it easy to spot direction mismatches before they cause a network conflict.
+</Tip>
+
+Direction matters when connecting two generators to the same network or when using a Deployer that needs to punch in a specific direction. A Gearbox reverses direction on every output face, so you can use it to correct a mismatch with a single block.

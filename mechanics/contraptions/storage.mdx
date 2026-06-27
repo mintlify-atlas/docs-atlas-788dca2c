@@ -1,0 +1,91 @@
+---
+title: "Storage on Contraptions: Inventories That Move"
+sidebarTitle: "Storage"
+description: "Chests, barrels, vaults, and fluid tanks on contraptions carry their contents while moving. Learn how to access moving storage with Portable Storage Interfaces."
+---
+
+Any block that holds an inventory — a Chest, a Barrel, Create's Item Vault, or a Fluid Tank — retains its full contents when assembled into a contraption and carries them throughout the contraption's journey. The items and fluids are not lost, dropped, or frozen; they remain fully accessible by the contraption's own actors and are faithfully restored to the world when the contraption disassembles.
+
+This ability to carry inventory in motion is what makes automated mining rigs, harvest combines, and mobile crafting stations possible. Knowing which storage types are supported, how to access them from outside the contraption, and how to automate the loading and unloading process is fundamental to building any non-trivial mobile machine.
+
+---
+
+## Supported Storage Types
+
+<CardGroup cols={2}>
+  <Card title="Chests and Barrels" icon="box">
+    Vanilla chests and barrels are recognised automatically. Their slots travel with the contraption and are restored in full when the structure lands. Double chests are collected as two separate single-chest storages.
+  </Card>
+  <Card title="Item Vault" icon="vault">
+    Create's high-capacity chest equivalent. Vaults offer far more slots than a chest and are the recommended choice for contraptions that need to store large harvests or mining runs. Multiple Vaults on one contraption pool their capacity for actors.
+  </Card>
+  <Card title="Fluid Tank" icon="droplet">
+    Create Fluid Tanks retain their fluid content on contraptions. This is how Steam Engines and Nozzles on contraptions maintain their fuel and spray fluid. Multi-block tank structures are preserved during movement.
+  </Card>
+  <Card title="Toolbox" icon="toolbox">
+    Create's Toolbox can also travel on contraptions, carrying its tools and maintaining its colour-coded storage. Useful for contraptions that need a curated set of items for a Deployer to draw from.
+  </Card>
+</CardGroup>
+
+---
+
+## MountedItemStorageType
+
+For addon developers, the `MountedItemStorageType` API is the mechanism that connects a block to Create's contraption storage system. Create registers built-in implementations for its own storage blocks (Vault, depot, creative crate, toolbox) and for standard chest-like blocks. Third-party mods can register their own storage blocks through this API so that those blocks also carry their inventories on contraptions.
+
+If you are building an addon and need to support custom storage, see [Contraption Storage API](/addon-dev/contraption-storage) for the registration pattern and the `MountedItemStorage` lifecycle.
+
+---
+
+## Accessing Moving Storage with Portable Storage Interfaces
+
+Contraption storage is sealed while the contraption is in motion — external pipes, hoppers, and funnels cannot reach inside a moving entity. The Portable Storage Interface (PSI) is the purpose-built solution: it creates a temporary connection between contraption storage and the outside world whenever a contraption docks with or passes a matching stationary interface.
+
+**How it works.** Place one PSI on the contraption, facing outward. Place a second PSI on a fixed block in the world, facing inward toward the path the contraption will travel. When the two interfaces come face-to-face (the contraption PSI passes directly adjacent to the stationary PSI), a transfer window opens and items move between the two inventories automatically. The transfer continues for as long as the two interfaces remain aligned.
+
+**Item direction.** By default, items flow from the contraption to the stationary side, enabling an unloading station. You can right-click the stationary PSI with a Wrench to reverse the direction, turning it into a loading station that fills the contraption's inventory as it passes.
+
+**Fluid counterpart.** The **Portable Fluid Interface** works identically for fluid tanks. Pair a Portable Fluid Interface on the contraption with one on a stationary block to transfer fluid in or out during a docking event.
+
+---
+
+## Fluid Storage
+
+Fluid Tanks mounted on a contraption travel with all their fluid intact and continue to be used as fuel (for Steam Engines) or supply (for Fluid Nozzles) while the contraption moves. When the contraption disassembles, the tanks are placed back into the world and resume normal function.
+
+To exchange fluid between a moving contraption and a stationary pipe network, use the **Portable Fluid Interface**:
+
+1. Mount a Fluid Interface block on the contraption facing outward, adjacent to the tank.
+2. Place a matching Fluid Interface on the stationary block at the stop point.
+3. Connect the stationary interface to your pipe or mechanical pump.
+
+The interfaces will handshake and transfer fluid while aligned, respecting the fill direction configured on the stationary side.
+
+---
+
+## Simple Unloading Station
+
+<Steps>
+  <Step title="Mount a Vault on the contraption">
+    Place one or more Item Vaults on your contraption to collect items from actors (drills, harvesters, etc.). Vaults have high capacity and are the best general-purpose on-board storage.
+  </Step>
+  <Step title="Add a Portable Storage Interface to the contraption">
+    Place a PSI on the contraption with its face pointing outward, perpendicular to the direction of travel. It should be flush with the contraption's side so it aligns with the stationary PSI at the stop point.
+  </Step>
+  <Step title="Place the stationary Portable Storage Interface">
+    At the location where the contraption will pause or dock, place a PSI on a fixed block facing inward, directly opposite the contraption-side PSI. The two must be exactly one block apart and facing each other when the contraption is at the stop position.
+  </Step>
+  <Step title="Connect the stationary PSI to your logistics network">
+    Attach a Belt, Mechanical Arm, or Funnel to the back of the stationary PSI to route items away into your storage system or processing line as they unload.
+  </Step>
+</Steps>
+
+---
+
+<Warning>
+  Items inside contraption storage are **not accessible** from outside while the contraption is in motion, nor are they reachable by hoppers, funnels, or pipes during transit. A PSI at the stop point is the only supported way to load or unload automatically. Attempting to reach inside a moving contraption with a hopper will yield nothing.
+</Warning>
+
+<Note>
+  The `moveItemsToStorage` config option (default `true`) controls whether actors such as the Mechanical Drill and Harvester automatically place their collected items into the contraption's mounted storage. Set it to `false` only if you want collected items to drop as world entities for a separate pickup system.
+</Note>

@@ -1,0 +1,125 @@
+---
+title: "Mechanical Components: Tools Powered by Rotation"
+sidebarTitle: "Components"
+description: "Create's mechanical components — presses, saws, drills, mixers, and more — consume rotational force to process items, mine blocks, and automate crafting."
+---
+
+Create's mechanical components are the workhorses of your factory. Each one consumes rotational force from the kinetic network to perform a specific task: shaping raw materials, mining the terrain, stirring reagents, or pushing air. Most components operate identically whether they are placed in a fixed position in your base or mounted on a moving contraption, giving you the flexibility to automate in-place production lines as well as roving mining or harvesting rigs.
+
+<Info>
+  Every component draws Stress Units (SU) from the network proportional to its speed. If total consumption exceeds the network's capacity the network stalls. Add more generator capacity or reduce speed to resolve a stall.
+</Info>
+
+---
+
+## Mechanical Press
+
+The Mechanical Press descends onto a surface below it to perform compacting and pressing recipes. Place a Basin or Depot underneath the press to receive items.
+
+- **Basin**: holds fluid and items simultaneously; needed for recipes that combine both (e.g., pressing iron sheets while adding a catalyst fluid).
+- **Depot**: a simple surface for items that need only physical compression (e.g., compressing iron nuggets into ingots).
+
+The press must receive rotation on the shaft on its top face. Speed determines how quickly it cycles between up and down positions. Pressing recipes do not require a minimum speed.
+
+---
+
+## Mechanical Saw
+
+The Mechanical Saw cuts wood, stone, and any block that has an associated saw recipe when powered. Place it with its blade facing the direction of the material to be cut.
+
+**Tree felling.** When a saw is pointed at the base of a tree, it can fell the entire trunk at once — all wood blocks directly above and connected to the targeted block are harvested together, regardless of height. This makes the saw far more efficient than a plain axe for logging.
+
+**Crafting recipes.** The saw also processes many shaped wood and stone products (slabs, stairs, planks from logs) using saw-specific recipe types. Items placed on a belt passing under a powered saw are processed in transit.
+
+---
+
+## Mechanical Drill
+
+The Mechanical Drill mines the single block directly in front of it, one block at a time, consuming the appropriate tool durability from the network's stress budget rather than a physical item.
+
+**Entity damage.** An active drill deals **4 damage** per contact to any entity standing in its path (`crushingDamage` config, default 4). This applies whether the drill is stationary or mounted on a moving contraption.
+
+<Warning>
+  The drill voids blocks that it mines unless a Chest, Vault, or other storage is accessible on the contraption (or a hopper/funnel is placed beneath the drill's output). Plan your collection infrastructure before running an automated drill rig.
+</Warning>
+
+---
+
+## Mechanical Mixer
+
+The Mechanical Mixer stirs items and fluids held in the Basin below it to produce mixing recipes. It must be spinning and positioned directly above a Basin.
+
+Mixing recipes can require a minimum speed level (slow, medium, or fast) to complete. Recipes that involve Blaze Burner heat require the basin to be placed on top of a lit Blaze Burner in addition to the mixer.
+
+---
+
+## Mechanical Millstone
+
+The Millstone grinds items placed on top of it using milling recipes, producing crushed or powdered outputs. It rotates around its vertical axis and can be fed items from above by a hopper, funnel, or chute.
+
+Processing is continuous: each item in the input slot is consumed over a short interval proportional to speed. A faster millstone processes items more quickly up to its recipe's rated throughput.
+
+---
+
+## Crushing Wheels
+
+A pair of Crushing Wheels positioned side by side with counter-rotating shafts crushes any item that falls between them. The two wheels must spin in opposite directions (one clockwise, one counter-clockwise from above) for items to be processed.
+
+**Entity damage.** Active Crushing Wheels deal **4 damage** per tick to any entity that enters the gap between them (`crushingDamage` config, default 4). Fencing around your crusher is strongly recommended.
+
+Crushing recipes often yield multiple outputs including bonus drops at a chance, making Crushing Wheels more resource-efficient than Millstones for ores and many other materials.
+
+---
+
+## Deployer
+
+The Deployer simulates a player's right-click or left-click action at the block directly in front of it. It can hold any item in its inventory slot, which it will use as a fake player hand when interacting.
+
+**Modes.** Right-click (default) activates blocks, plants seeds, fills buckets, and applies items to surfaces. Left-click breaks blocks and attacks entities. Toggle between modes with a Wrench.
+
+**Contraption use.** The Deployer is also an actor — it fires its action at every world position a contraption passes through. This enables automated planting rows, applying bonemeal, writing signs, or crafting items in sequence along a track.
+
+**Aggression setting.** By default the Deployer ignores Creepers when left-clicking (`ignoreDeployerAttacks = CREEPERS`). This can be changed to `ALL` (ignores all mobs) or `NONE` (attacks everything) in the config.
+
+---
+
+## Mechanical Harvester
+
+The Mechanical Harvester is a contraption-only actor. It has no in-place function and must be mounted on a moving structure such as a piston arm or gantry carriage.
+
+As the contraption moves, the harvester sweeps over any crop blocks in its path and collects their drops. By default it replants the crop it harvested using a seed from the dropped output (`harvesterReplants = true`). Partially-grown crops are left alone by default (`harvestPartiallyGrown = false`), so the harvester only strips fully mature plants.
+
+<Tip>
+  Mount multiple Harvesters side by side on a wide piston contraption to harvest an entire crop field in a single pass. The collected items fall into any Vault or storage block also mounted on the contraption.
+</Tip>
+
+---
+
+## Mechanical Plough
+
+The Mechanical Plough also requires a moving contraption to function. As it passes over dirt or grass blocks it tills them into farmland. It also breaks fragile surface blocks such as snow layers, tall grass, and immature crops that block its path.
+
+Combine the Plough with the Harvester on the same contraption: a forward pass tills soil and a return pass (or a second contraption) plants seeds via a Deployer.
+
+---
+
+## Encased Fan
+
+The Encased Fan pushes or pulls entities and items in the direction it faces, and simultaneously processes items caught in its air stream using special fan recipes.
+
+**Air-stream distance.** The fan pushes entities up to **20 blocks** away (`fanPushDistance` config) and can pull from up to **20 blocks** in the reverse direction (`fanPullDistance` config). Reach and force scale with RPM up to `fanRotationArgmax = 256 RPM`, after which the stats plateau.
+
+**Processing recipes.** Place the appropriate block source in the path of the air current to process items floating in the stream:
+
+| Source block in stream | Processing type |
+|---|---|
+| Fire or Magma block | Smelting (bulk smelting) |
+| Water source block | Washing |
+| Soul Sand or Soul Fire | Haunting |
+| Powdered Snow | Freezing |
+
+Items can be fed into the stream via a hopper or funnel and collected out the other end with another funnel or hopper, enabling a fully automated processing line that requires no player input.
+
+<Tip>
+  For detailed recipes and processing throughput, see [Fan Processing](/mechanics/fluids/fan-processing).
+</Tip>

@@ -1,0 +1,156 @@
+---
+title: "Train Signals: Preventing Collisions on Shared Tracks"
+sidebarTitle: "Signals"
+description: "Create's signal system divides your rail network into signal blocks to prevent multiple trains occupying the same section. Learn block signals, chain signals, and deadlock prevention."
+---
+
+Signals divide a track network into protected sections called **signal blocks**. A train may only enter a signal block when that block is unoccupied — this guarantees that no two trains share the same stretch of track simultaneously, preventing head-on and rear-end collisions. On a single-train network you can omit signals entirely; they become essential the moment two or more trains share any portion of track.
+
+## How Signal Blocks Work
+
+A signal block is the region of track between two `SignalBoundary` points. Each boundary is created by placing one or more signal block entities on a track. The `SignalEdgeGroup` associated with each signal block tracks which trains are currently occupying it. When a train requests entry via a `SignalBoundary`, the system checks `signalEdgeGroup.isOccupiedUnless(thisBoundary)` — if the group is occupied by another train, the signal shows red and the requesting train brakes to a halt before the boundary.
+
+Signal block membership is computed by `SignalPropagator`, which walks the track graph from each boundary and groups edges into `SignalEdgeGroup` sets. Placing a new signal anywhere on the network triggers a re-propagation across the affected connected graph.
+
+<Note>
+Signals only function on **Create Track**. Vanilla rail blocks are invisible to the signal propagator and will never form signal block boundaries.
+</Note>
+
+## Signal Types
+
+Both signal types are variants of the same `SignalBlock` block entity, toggled by right-clicking with a Wrench. The current type is stored as the `TYPE` block state property (`entry_signal` or `cross_signal` in `SignalBlock.SignalType`).
+
+<CardGroup cols={2}>
+  <Card title="Block Signal (Entry Signal)" icon="circle-stop">
+    The standard signal. Guards entry into the **next** signal block. Shows:
+    - 🔴 **Red** — the next block is occupied; train stops before the signal
+    - 🟢 **Green** — the next block is clear; train may proceed
+
+    Use block signals to divide a long straight run into segments, preventing a slow train from backing up all traffic behind it.
+  </Card>
+  <Card title="Chain Signal (Cross Signal)" icon="link">
+    An advanced signal that evaluates the **entire chain of blocks ahead**, all the way to the next Block Signal or station. Shows:
+    - 🔴 **Red** — at least one block in the chain is occupied; train stops
+    - 🟡 **Yellow** — the immediate next block is clear but a downstream block is occupied; train may enter but should expect to stop
+    - 🟢 **Green** — all blocks in the chain are clear
+
+    Use chain signals at **junctions** — a train entering from a branch should not commit to the junction unless it can clear the far side.
+  </Card>
+</CardGroup>
+
+The signal state machine in `SignalBoundary.resolveSignalChain()` collects all chained signal groups via `SignalPropagator.collectChainedSignals()`, then walks each group's state. If all downstream paths report GREEN or INVALID, the chain resolves to GREEN. If all report RED, the chain resolves to RED. A mixed result yields YELLOW.
+
+## Placing Signals
+
+Signals are placed on the **side face** of a track block, pointing in the **direction of travel** they protect. This means:
+
+- A signal placed on the north face of a track, facing south, protects southbound trains.
+- The same track block can carry a signal on its south face facing north to protect northbound trains independently.
+- Two signals back-to-back (one on each face) give **bidirectional protection** on a two-way section.
+
+<Steps>
+  <Step title="Identify your track sections">
+    Decide where you want to divide the network. Each gap between signals becomes one signal block. Longer blocks mean trains wait longer; shorter blocks allow more trains to run simultaneously.
+  </Step>
+  <Step title="Place the signal adjacent to the track">
+    Right-click the side of the track block where you want the boundary. The signal attaches as a wall-mounted block entity. Its facing direction (matching the direction you're looking along the track) determines which way traffic it governs.
+  </Step>
+  <Step title="Choose Block or Chain Signal">
+    Default placement creates a Block Signal (Entry Signal). Use a Wrench to cycle to a Chain Signal at junctions and merges. The type change propagates through the signal system immediately.
+  </Step>
+  <Step title="Repeat for the other direction if needed">
+    For two-way track, place a second signal on the opposite face of the same (or a nearby) track block, facing the opposite direction. Both signals operate independently.
+  </Step>
+</Steps>
+
+<Warning>
+A signal placed with its facing direction pointing **away** from oncoming traffic will never be seen by trains approaching from that direction. Always confirm the signal's facing matches the direction trains will be traveling when they reach it.
+</Warning>
+
+## Signal States in Detail
+
+The `SignalBlockEntity` cycles through four internal states defined in `SignalBlockEntity.SignalState`:
+
+| State | Meaning | Light Color |
+|---|---|---|
+| `GREEN` | Block ahead is clear — proceed | Green |
+| `YELLOW` | Chain signal only — clear immediately ahead, occupied further down | Yellow |
+| `RED` | Block ahead is occupied — stop | Red |
+| `INVALID` | Signal is not connected to a track graph (flashes red at 40-tick interval) | Flashing Red |
+
+An `INVALID` signal results from the signal block entity being placed but not yet linked to the track's graph — for example, if the track block is removed after the signal is placed. Replacing the track fixes it.
+
+Signals can also be **forced red** by applying a redstone signal to the signal block. This overrides the automatic state: `SignalBoundary.isForcedRed()` returns true whenever any signal block entity on that boundary has `POWERED = true`. This allows external redstone logic to manually close a section.
+
+Conversely, a CC:Tweaked computer attached to the signal peripheral can override the signal state programmatically — `computerBehaviour.hasAttachedComputer()` causes the signal to ignore redstone neighbor power and respond only to computer commands.
+
+## Reading Signal State with Goggles
+
+Wearing **Engineer's Goggles** while looking at a signal or nearby track shows signal block color overlays rendered by `SignalRenderer` and `SignalEdgeGroupPacket`. Each signal block group is assigned a unique color from `EdgeGroupColor` for easy visual distinction.
+
+The `OverlayState` on each signal block entity (`RENDER`, `SKIP`, `DUAL`) determines whether the overlay is drawn for a given block:
+
+- `RENDER` — this is the primary signal for this boundary; draw the full overlay
+- `DUAL` — a second signal exists on the same boundary; show a simplified indicator
+- `SKIP` — no overlay (signal not facing this direction)
+
+## Deadlock Prevention
+
+Deadlocks occur when two or more trains each hold a signal block that another train needs to proceed. This creates a permanent standstill with no train able to move.
+
+**Common deadlock scenario:** Two trains approach each other on a single-track section with a passing loop. Train A enters the loop from the west, Train B enters from the east. Both hold their respective blocks and neither can advance.
+
+**Prevention strategies:**
+
+<CardGroup cols={2}>
+  <Card title="Use Chain Signals at Junctions" icon="shield-check">
+    Place a Chain Signal at the entrance of any junction or merge point. The train will not enter the junction until it can guarantee a clear path all the way through. If the exit is blocked, the train waits before the junction — not inside it.
+  </Card>
+  <Card title="Design One-Way Loops" icon="rotate">
+    Avoid two-way single-track sections entirely. Route trains in a single direction around a loop. One-way track never creates head-on scenarios and eliminates the need for most junction signals.
+  </Card>
+  <Card title="Add Passing Loops" icon="road-spikes">
+    On unavoidable two-way sections, add periodic passing loops — short sidings where a train can wait while another passes. Place Block Signals at each loop entrance/exit so trains can hold in the siding.
+  </Card>
+  <Card title="Keep Signal Blocks Short at Junctions" icon="scissors">
+    Short signal blocks near merges mean a waiting train blocks less of the network. A train that can pull forward into a short buffer block frees the block behind it for the opposing train to advance.
+  </Card>
+</CardGroup>
+
+<Tip>
+For a simple two-train shuttle (Train A goes east while Train B goes west on shared track), place a Chain Signal at each end of the shared section and a passing loop in the middle. Both trains can run simultaneously as long as only one occupies the shared track at a time.
+</Tip>
+
+## The Train Observer Block
+
+The **Train Observer** (`TrackObserverBlock`) is a detection block — not a signal — that outputs a redstone pulse when a train passes. It sits adjacent to a track and outputs strength **15** for as long as a train is over the monitored section.
+
+Unlike signals, the Train Observer does not interact with the signal block system at all: it does not create signal boundaries, does not stop trains, and does not coordinate access. It is purely an output device for redstone automation.
+
+Typical uses alongside a signal network:
+
+- Trigger a gate or door to open as a train approaches a station
+- Count train passages for statistics or rate-limiting logic
+- Activate a bell or horn block when a train crosses a level crossing
+- Alert a CC:Tweaked computer to an unexpected train movement
+
+## Addon Development: TrackGraphMergeEvent
+
+When two previously separate `TrackGraph` instances become connected (for example, a player bridges a gap between two independent track networks), Create fires a graph merge event. Addon mods listening to this event can respond to network topology changes — for example, recalculating custom pathfinding caches or updating external map data.
+
+The merge updates all signal group propagation for the combined graph, reassigns boundary UUIDs, and synchronizes the new graph state to all clients via `TrackGraphSyncPacket`. Signal states recalculate automatically after a merge.
+
+## Quick Reference: When to Use Which Signal
+
+| Situation | Recommended Signal |
+|---|---|
+| Straight section, one direction of travel | Block Signal at each end |
+| Straight section, two-way traffic | Block Signals back-to-back at each end |
+| Junction / branch merge | Chain Signal on approach arm(s) |
+| Station approach (busy network) | Chain Signal before the station throat |
+| External redstone gate | Block Signal + apply redstone to force red |
+| Single-train network | No signals needed |
+
+<Info>
+For networks with only one train, signals add no safety benefit — the single train can never encounter itself. Add signals only when you introduce a second train that shares any portion of track with the first.
+</Info>

@@ -1,0 +1,204 @@
+---
+title: "Custom Recipes for Create: Data Generation and Processing"
+sidebarTitle: "Custom Recipes"
+description: "Add custom recipes for Create's processing machines using BaseRecipeProvider and StandardProcessingRecipeGen. Generate JSON recipe files with Create's data gen helpers."
+---
+
+Create's recipe system is entirely data-driven: every machine recipe is a JSON file loaded from a datapack. Addon mods can add recipes for Create's existing machines or introduce entirely new processing recipe types by extending Create's data-generation helpers. There is no need to touch Java code at runtime — you generate the JSON files during your mod's data-gen phase, and the game loads them like any other datapack.
+
+## BaseRecipeProvider
+
+`com.simibubi.create.api.data.recipe.BaseRecipeProvider` extends NeoForge's `RecipeProvider` with a lightweight registration helper and a `modid` namespace. Use this base class when your custom recipe type is **not** a processing recipe (i.e., it doesn't use `ProcessingRecipe`).
+
+```java
+/**
+ * A class containing basic setup for recipe generators.
+ * Extend this if you have a custom recipe type that is NOT a processing recipe.
+ * For processing recipes, extend {@link StandardProcessingRecipeGen} instead.
+ */
+public abstract class BaseRecipeProvider extends RecipeProvider {
+
+    /** The mod namespace used for generated recipe resource locations. */
+    protected final String modid;
+
+    /**
+     * All registered GeneratedRecipe instances. buildRecipes() calls each in order.
+     */
+    protected final List<GeneratedRecipe> all = new ArrayList<>();
+
+    public BaseRecipeProvider(PackOutput output,
+                              CompletableFuture<HolderLookup.Provider> registries,
+                              String defaultNamespace) { ... }
+
+    /** Build a ResourceLocation in this provider's namespace. */
+    protected ResourceLocation asResource(String path) { ... }
+
+    /** Register a recipe for generation. Returns the recipe for chaining. */
+    protected GeneratedRecipe register(GeneratedRecipe recipe) { ... }
+
+    @Override
+    public void buildRecipes(RecipeOutput recipeOutput) {
+        // Calls register() on every GeneratedRecipe, then logs the count.
+    }
+
+    @FunctionalInterface
+    public interface GeneratedRecipe {
+        void register(RecipeOutput recipeOutput);
+    }
+}
+```
+
+### Minimal example
+
+```java
+public class MyRecipeProvider extends BaseRecipeProvider {
+
+    public MyRecipeProvider(PackOutput output,
+                            CompletableFuture<HolderLookup.Provider> registries) {
+        super(output, registries, "mymod");
+    }
+
+    @Override
+    public String getName() {
+        return "My Mod Recipes";
+    }
+
+    // Register individual GeneratedRecipe lambdas here using the `register()` helper.
+}
+```
+
+## StandardProcessingRecipeGen
+
+`com.simibubi.create.api.data.recipe.StandardProcessingRecipeGen<R>` is the base class for all of Create's machine-processing recipe generators (compacting, crushing, mixing, etc.). Extend it when your recipe type extends `StandardProcessingRecipe`.
+
+```java
+public abstract class StandardProcessingRecipeGen<R extends StandardProcessingRecipe<?>>
+    extends ProcessingRecipeGen<ProcessingRecipeParams, R, StandardProcessingRecipe.Builder<R>> {
+
+    public StandardProcessingRecipeGen(PackOutput output,
+                                       CompletableFuture<Provider> registries,
+                                       String defaultNamespace) { ... }
+
+    /** Return the serializer for recipe type R. Used internally. */
+    protected StandardProcessingRecipe.Serializer<R> getSerializer() { ... }
+
+    @Override
+    protected Builder<R> getBuilder(ResourceLocation id) { ... }
+}
+```
+
+Override `getRecipeType()` in your subclass to return the `AllRecipeTypes` entry that corresponds to your recipe type. Then use the `create(...)` factory methods inherited from `ProcessingRecipeGen` to build individual recipes.
+
+## CompactingRecipeGen
+
+`com.simibubi.create.api.data.recipe.CompactingRecipeGen` is the built-in generator for Mechanical Press + Basin compacting recipes. It is a thin subclass of `StandardProcessingRecipeGen` and serves as a reference implementation:
+
+```java
+/**
+ * Base class for Compacting recipe generation.
+ * Extend this and use ProcessingRecipeGen#create() to build recipes.
+ * Needs to be added to a registered recipe provider to do anything.
+ */
+public abstract class CompactingRecipeGen
+    extends StandardProcessingRecipeGen<CompactingRecipe> {
+
+    public CompactingRecipeGen(PackOutput output,
+                               CompletableFuture<HolderLookup.Provider> registries,
+                               String defaultNamespace) { ... }
+
+    @Override
+    protected AllRecipeTypes getRecipeType() {
+        return AllRecipeTypes.COMPACTING;
+    }
+}
+```
+
+Parallel classes exist for every other processing type: `CrushingRecipeGen`, `MillingRecipeGen`, `PressingRecipeGen`, `MixingRecipeGen`, `DeployingRecipeGen`, `CuttingRecipeGen`, `WashingRecipeGen`, `HauntingRecipeGen`, `SequencedAssemblyRecipeGen`, `FillingRecipeGen`, `EmptyingRecipeGen`, and more.
+
+## Recipe Types in Create
+
+<CardGroup cols={2}>
+  <Card title="Crushing" icon="hammer">
+    **Machine:** Crushing Wheels  
+    **Recipe type:** `create:crushing`  
+    Converts blocks and ores into dusts or other items, optionally with chance-based secondary outputs.
+  </Card>
+  <Card title="Milling" icon="circle">
+    **Machine:** Millstone  
+    **Recipe type:** `create:milling`  
+    Grinds items into powders. Slower than Crushing Wheels but single-block.
+  </Card>
+  <Card title="Pressing" icon="arrow-down">
+    **Machine:** Mechanical Press  
+    **Recipe type:** `create:pressing`  
+    Presses items placed below the press head into new items.
+  </Card>
+  <Card title="Compacting" icon="layer-group">
+    **Machine:** Mechanical Press + Basin  
+    **Recipe type:** `create:compacting`  
+    Compacts items in a Basin. Supports fluid inputs and outputs.
+  </Card>
+  <Card title="Mixing" icon="blender">
+    **Machine:** Mechanical Mixer + Basin  
+    **Recipe type:** `create:mixing`  
+    Mixes multiple item and fluid inputs in a Basin into outputs.
+  </Card>
+  <Card title="Deploying" icon="hand">
+    **Machine:** Deployer  
+    **Recipe type:** `create:deploying`  
+    Uses a Deployer to apply an item to another item or block, crafting a result.
+  </Card>
+  <Card title="Cutting" icon="scissors">
+    **Machine:** Mechanical Saw  
+    **Recipe type:** `create:cutting`  
+    Cuts items or blocks. Commonly used for planks → slabs and similar.
+  </Card>
+  <Card title="Splashing" icon="droplet">
+    **Machine:** Encased Fan + Water  
+    **Recipe type:** `create:splashing`  
+    Washes items in a water-backed fan air stream.
+  </Card>
+  <Card title="Haunting" icon="ghost">
+    **Machine:** Encased Fan + Soul Fire  
+    **Recipe type:** `create:haunting`  
+    Transforms items in a soul-fire-backed fan air stream.
+  </Card>
+  <Card title="Sequenced Assembly" icon="list-ordered">
+    **Machine:** Multiple (configurable)  
+    **Recipe type:** `create:sequenced_assembly`  
+    Multi-step processing pipeline; each step can use a different machine.
+  </Card>
+</CardGroup>
+
+## Registering the Data Provider
+
+Add your recipe provider to NeoForge's data-gen pipeline in your `GatherDataEvent` handler:
+
+```java
+@SubscribeEvent
+public static void onGatherData(GatherDataEvent event) {
+    DataGenerator generator = event.getGenerator();
+    PackOutput output = generator.getPackOutput();
+    CompletableFuture<HolderLookup.Provider> registries = event.getLookupProvider();
+
+    // Non-processing recipe provider:
+    generator.addProvider(
+        event.includeServer(),
+        new MyRecipeProvider(output, registries)
+    );
+
+    // Processing recipe provider (e.g. compacting):
+    generator.addProvider(
+        event.includeServer(),
+        new MyCompactingRecipes(output, registries)
+    );
+}
+```
+
+<Info>
+  Recipe JSON files are written to `data/<modid>/recipes/` inside your generated resources. Create registers its own recipe types during mod initialisation, so they are available to data-gen without any extra setup on your part.
+</Info>
+
+<Note>
+  For fan processing recipes (`create:splashing`, `create:haunting`), use the dedicated `WashingRecipeGen` and `HauntingRecipeGen` base classes. If you add a **custom** fan processing type with its own recipe type, follow the same pattern but target your own `AllRecipeTypes` entry.
+</Note>

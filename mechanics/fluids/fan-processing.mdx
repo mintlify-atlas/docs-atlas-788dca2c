@@ -1,0 +1,111 @@
+---
+title: "Fan Processing: Bulk Item Processing with Air Streams"
+sidebarTitle: "Fan Processing"
+description: "Encased Fans push air streams that process items in bulk. Learn the built-in processing types — washing, smelting, smoking, and haunting — and how to automate them."
+---
+
+An **Encased Fan** blowing air through a catalyst block creates a processing zone that transforms items passing through the stream. This is Create's primary mechanism for bulk item conversion — it's faster than furnace arrays, fully automatable, and extensible through the `FanProcessingType` API. The four built-in processing types each use a different catalyst block and a different recipe set, making the fan a versatile workhorse for smelting, washing, smoking, and more esoteric transformations.
+
+## How Fan Processing Works
+
+Fan processing requires three things in alignment: a powered fan, a catalyst block in the fan's airstream, and items to process.
+
+<Steps>
+  <Step title="Place an Encased Fan">
+    Orient it so its output face points toward the area where items will be processed. The fan must be connected to a rotational power source — any RPM will work, though higher RPM does **not** speed up processing.
+  </Step>
+  <Step title="Place the catalyst block">
+    Put the catalyst block immediately in front of the fan's output, or further along the airstream. The fan pushes an air column up to **20 blocks** long (`fanPushDistance`). The catalyst can be anywhere within that column.
+  </Step>
+  <Step title="Items enter the airstream">
+    Items that enter the fan's airstream are suspended and carried through the catalyst zone. They must spend enough time in the zone to be processed — this takes **150 game ticks** (7.5 seconds) by default.
+  </Step>
+  <Step title="Processed items are ejected">
+    Once processing completes, the fan's airstream carries the output items to the far end of the column, where they land on whatever surface (Belt, Depot, floor) is waiting.
+  </Step>
+</Steps>
+
+<Note>
+  The processing time of 150 ticks is configurable via `fanProcessingTime` in the server config (under the `encasedFan` group). Setting it to `0` makes processing instantaneous.
+</Note>
+
+## Built-in Processing Types
+
+Create ships with four processing types, each identified by the catalyst it checks for. The types are registered in `AllFanProcessingTypes` and implement the `FanProcessingType` interface via `CreateBuiltInRegistries.FAN_PROCESSING_TYPE`.
+
+<CardGroup cols={2}>
+  <Card title="Splashing (Washing)" icon="droplet">
+    **Catalyst:** Water source block (or any block/fluid matching the `#create:fan_processing_catalysts/splashing` tags)
+
+    Processes items using **splashing recipes** — Create's custom recipe type for washing. Common outputs include washed gravel yielding flint or gold nuggets, and ore washing for bonus byproducts.
+
+    Also extinguishes burning entities and damages Endermen, Snow Golems, and Blazes that pass through the stream.
+  </Card>
+  <Card title="Blasting (Smelting)" icon="fire">
+    **Catalyst:** Lava source block, Blaze Burner (fading heat or hotter), or any block/fluid matching the `#create:fan_processing_catalysts/blasting` tags
+
+    Applies **smelting and blasting recipes** (standard furnace and blast furnace recipes). Items that have no smelting recipe and lack fire resistance are destroyed.
+
+    Ignites non-fire-immune entities passing through the stream (10 seconds, 4 damage).
+  </Card>
+  <Card title="Smoking" icon="cloud">
+    **Catalyst:** Lit campfire, smouldering Blaze Burner, or any block/fluid matching the `#create:fan_processing_catalysts/smoking` tags
+
+    Applies **smoking recipes** (smoker recipes). Useful for cooking foods in bulk. The campfire must be lit — an unlit campfire does not activate this processing type.
+
+    Ignites non-fire-immune entities passing through the stream (2 seconds, 2 damage).
+  </Card>
+  <Card title="Haunting" icon="ghost">
+    **Catalyst:** Soul fire, soul campfire (lit), soul-flame Blaze Burner, or any block/fluid matching the `#create:fan_processing_catalysts/haunting` tags
+
+    Applies **haunting recipes** — Create's unique recipe type for soul-fire transformations. Notable uses include converting torches to soul torches, and haunting a regular Horse into a Skeleton Horse.
+
+    Inflicts Blindness and Slowness on living entities passing through the stream.
+  </Card>
+</CardGroup>
+
+When multiple catalysts are present in the same airstream, the type with the **highest priority** wins. Priority order (highest first): Splashing (400) → Haunting (300) → Smoking (200) → Blasting (100).
+
+## Automation Setup
+
+<Steps>
+  <Step title="Feed items into the airstream">
+    Use a **Funnel** aimed into the side of the airstream or a **Belt** running through the stream's entry point to feed items automatically from a chest, vault, or other storage.
+  </Step>
+  <Step title="Position the catalyst">
+    Place the catalyst block within the fan's push range (up to 20 blocks). Items will be suspended and processed as they pass through.
+  </Step>
+  <Step title="Catch processed items">
+    Place a **Belt** or **Depot** at the far end of the airstream to catch the output items as they fall out of the stream.
+  </Step>
+  <Step title="Return output to storage">
+    Add a **Funnel** on the catching belt or depot to automatically insert processed items into a chest or vault for storage.
+  </Step>
+</Steps>
+
+<Tip>
+  Place a Funnel feeding items onto the belt that enters the airstream and a second Funnel at the output belt. With the fan running continuously, this creates a fully automatic processing line that operates as fast as items are supplied — no player interaction needed.
+</Tip>
+
+## Processing Time
+
+The default processing time is **150 game ticks (7.5 seconds)**. This value applies uniformly to all four built-in processing types and to any custom types registered via the API.
+
+Fan speed (RPM) does **not** affect how quickly an individual item is processed — it only changes the velocity of items in the airstream, and therefore how many items can be in the stream simultaneously at high throughput. For raw processing speed, adjust `fanProcessingTime` in the server config.
+
+## Fan Push and Pull Distances
+
+| Parameter | Default | Config key |
+|---|---|---|
+| Push distance (forward air column) | 20 blocks | `fanPushDistance` |
+| Pull distance (reverse suction) | 20 blocks | `fanPullDistance` |
+
+A fan set to blow (positive rotation) creates a 20-block push column. A fan set to suck (reversed rotation) pulls items toward itself over 20 blocks. Both distances are independently configurable.
+
+<Tip>
+  Stacking multiple catalyst blocks of the same type in the airstream does **not** speed up processing. Only the first catalyst encountered by the airstream applies; items are processed once per pass regardless of how many catalyst blocks line the column.
+</Tip>
+
+<Info>
+  The `FanProcessingType` API allows addons and datapacks to register entirely new processing catalysts with custom recipe lookups, particle effects, air-flow colouring, and entity interaction logic. See [Fan Processing Types](/addon-dev/fan-processing-types) for the full addon developer reference.
+</Info>

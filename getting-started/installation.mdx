@@ -1,0 +1,105 @@
+---
+title: "Install Create for NeoForge 1.21.1"
+sidebarTitle: "Installation"
+description: "Step-by-step guide to downloading and installing Create on NeoForge 1.21.1. Covers CurseForge, Modrinth, and manual jar installation."
+---
+
+Installing Create is straightforward: drop a single `.jar` file into your `mods/` folder and you are ready to go. The only hard requirement is the correct version of NeoForge. This guide covers every step from a fresh Minecraft installation through to verifying that Create has loaded successfully.
+
+## Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| Minecraft (Java Edition) | **1.21.1** |
+| NeoForge | **21.1.x** (tested against **21.1.219**) |
+| Java | 21 (bundled with the Minecraft launcher) |
+
+No other mods are strictly required. Optional enhancements are listed at the bottom of this page.
+
+## Installation steps
+
+<Steps>
+  <Step title="Install NeoForge 21.1.x">
+    Download the NeoForge installer for Minecraft 1.21.1 from [neoforged.net](https://neoforged.net/).
+
+    Run the installer JAR:
+
+    ```bash
+    java -jar neoforge-21.1.219-installer.jar
+    ```
+
+    Select **Install client** and point it at your Minecraft installation directory. The installer creates a new NeoForge profile in the official Minecraft Launcher automatically.
+
+    <Note>
+      NeoForge 21.1.219 is the version Create 6.0.11 is compiled and tested against. Later patch releases in the 21.1.x series are generally compatible, but using a different minor version (e.g. 21.2.x) is not supported.
+    </Note>
+  </Step>
+
+  <Step title="Download Create">
+    Grab the latest Create `.jar` for Minecraft 1.21.1 from one of the official distribution channels:
+
+    - **CurseForge** — [curseforge.com/minecraft/mc-mods/create](https://www.curseforge.com/minecraft/mc-mods/create)
+    - **Modrinth** — [modrinth.com/mod/create](https://modrinth.com/mod/create)
+
+    Always download from these two sources. Both pages show a clear version filter — select **1.21.1** and **NeoForge** to ensure you get the right file. The filename will look similar to `create-1.21.1-6.0.11.jar`.
+
+    <Warning>
+      Do not download Create from third-party rehost sites. Unofficial mirrors frequently serve outdated or modified jars.
+    </Warning>
+  </Step>
+
+  <Step title="Place the jar in your mods folder">
+    Locate your Minecraft instance directory:
+
+    | OS | Default path |
+    |----|-------------|
+    | Windows | `%APPDATA%\.minecraft` |
+    | macOS | `~/Library/Application Support/minecraft` |
+    | Linux | `~/.minecraft` |
+
+    Open the `mods/` subfolder (create it if it does not exist) and copy the downloaded `create-*.jar` into it.
+
+    ```
+    .minecraft/
+    └── mods/
+        └── create-1.21.1-6.0.11.jar   ← place it here
+    ```
+  </Step>
+
+  <Step title="Launch Minecraft with the NeoForge profile">
+    Open the official Minecraft Launcher, select the **NeoForge 1.21.1** profile from the profile dropdown, and press **Play**. The first launch with mods installed takes slightly longer as NeoForge scans and registers all mod content.
+  </Step>
+
+  <Step title="Verify Create has loaded">
+    Once the main menu appears, click **Mods** (added by NeoForge to the main menu). Search for **Create** in the mod list. You should see an entry showing version **6.0.11** with a green tick.
+
+    If Create does not appear, double-check that:
+    - The `.jar` is in the correct `mods/` folder for the profile you launched.
+    - The NeoForge version matches 21.1.x.
+    - No error messages appeared in the loading screen (red text indicates a crash — check `logs/latest.log`).
+  </Step>
+</Steps>
+
+## Optional dependencies
+
+None of the following mods are required to run Create, but each enhances the experience in a meaningful way:
+
+<CardGroup cols={3}>
+  <Card title="JEI (Just Enough Items)" icon="book-open">
+    Adds an in-game recipe browser. Create registers all of its custom recipe types — Basin crafting, Mixing, Pressing, Milling, and more — so every recipe is discoverable without leaving the game. Download from [modrinth.com/mod/jei](https://modrinth.com/mod/jei).
+  </Card>
+  <Card title="Curios API" icon="shirt">
+    Provides dedicated equipment slots for Create wearables. With Curios installed, the **Backtank** (portable compressed-air supply for drills and diving) occupies its own slot rather than displacing your chestplate. Download from [modrinth.com/mod/curios](https://modrinth.com/mod/curios).
+  </Card>
+  <Card title="CC: Tweaked" icon="terminal">
+    Adds programmable computers and turtles. Create's CC: Tweaked integration exposes a Peripheral API that lets Lua scripts read train schedules, query kinetic networks, and control display link outputs. Download from [modrinth.com/mod/cc-tweaked](https://modrinth.com/mod/cc-tweaked).
+  </Card>
+</CardGroup>
+
+<Tip>
+  **Discover mechanics without leaving the game.** Once Create is installed, hover over any Create item in your inventory and press **W** to open the **Ponder** tutorial viewer — an animated, in-game walkthrough specific to that block. It is the fastest way to understand a new machine without consulting external documentation.
+</Tip>
+
+<Note>
+  This guide covers the **NeoForge** edition of Create. A separate Fabric port is maintained by the community at [github.com/Fabricators-of-Create/Create](https://github.com/Fabricators-of-Create/Create). Installation steps for that version differ; consult its own README.
+</Note>

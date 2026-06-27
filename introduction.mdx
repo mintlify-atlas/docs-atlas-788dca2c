@@ -1,0 +1,70 @@
+---
+title: "Create: Building Tools and Aesthetic Technology"
+sidebarTitle: "Introduction"
+description: "Create is a NeoForge Minecraft mod adding kinetic machines, contraptions, fluid networks, logistics, and railways. Automation without UIs — just physical machines you build."
+---
+
+Create is a mod for Minecraft 1.21.1 (NeoForge) that adds a suite of tools, machines, and blocks centred on **building, decoration, and aesthetic automation**. Rather than clicking through menus and crafting recipes inside UIs, Create challenges you to design physical contraptions — animated assemblies of spinning shafts, moving pistons, cascading conveyor belts, and rolling trains that operate entirely in the world you inhabit. Every machine you build is visible, observable, and part of your base's architecture.
+
+## What makes Create different
+
+Most tech mods hand you a block, a recipe, and a GUI. Create takes the opposite approach: every process is driven by **rotational force** delivered through shafts, gears, and belts that you lay out yourself. A Crushing Wheel only crushes ore if it is physically spinning fast enough. A Mechanical Pump only moves fluid when rotation reaches it through a connected shaft. This physical paradigm means your factory looks like a factory — gears turn, belts move, and the world reacts.
+
+Two mechanics sit at the heart of every machine network:
+
+- **Stress & Rotation** — Each kinetic source (Water Wheel, Steam Engine, Windmill, Hand Crank) produces a pool of *Stress Units* (SU) of capacity. Every consumer draws from that pool. Overload the network and everything stalls. Balance it and speeds scale consistently across the whole network.
+- **Speed** — Rotation is measured in RPM. Gearboxes, Large Cogwheels, and Speed Controllers let you trade torque for speed or vice versa, letting fine-grained control over each branch of your network.
+
+The **Ponder** system is Create's built-in, animated tutorial engine. Hover over any Create block in your inventory and press **W** to open a step-by-step in-game animation that shows exactly how that block works, how to connect it, and what it produces. No wiki required.
+
+## Key systems
+
+<CardGroup cols={3}>
+  <Card title="Kinetics" icon="gear" href="/concepts/rotational-force">
+    Shafts, cogwheels, gearboxes, and speed controllers form the backbone of every machine network. Understand stress units and RPM before you build anything large.
+  </Card>
+  <Card title="Contraptions" icon="cube" href="/mechanics/contraptions/assembly">
+    Mechanical Pistons, Bearings, and Pulleys can pick up and move entire multi-block structures as a single animated unit — carrying blocks, entities, and inventories with them.
+  </Card>
+  <Card title="Fluids" icon="droplet" href="/mechanics/fluids/pipes-and-pumps">
+    Fluid Pipes, Mechanical Pumps, Spouts, and Tanks form a pressure-driven fluid network capable of filling, mixing, and processing liquids at scale.
+  </Card>
+  <Card title="Logistics" icon="conveyor-belt" href="/mechanics/logistics/item-transport">
+    Mechanical Belts, Funnels, Chutes, Brass Tunnels, and Smart Chutes give you precise control over item movement without redstone spaghetti.
+  </Card>
+  <Card title="Trains" icon="train" href="/mechanics/trains/track-and-assembly">
+    Create's railway system supports curved track, multi-bogey locomotives, automated schedules, signals, and a full station network — all built block-by-block.
+  </Card>
+  <Card title="Addon API" icon="code" href="/addon-dev/overview">
+    Create exposes a stable addon API so third-party mods can register new kinetic blocks, contraption behaviours, recipe types, and Ponder scenes.
+  </Card>
+</CardGroup>
+
+## Compatibility & Integrations
+
+Create ships with dedicated compatibility modules for several popular mods. These are compiled against the versions pinned in the project and activate automatically when the target mod is present:
+
+| Mod | What it adds |
+|-----|-------------|
+| **CC: Tweaked** | Peripheral API for controlling trains, displays, and kinetic networks from Lua programs. |
+| **JEI / REI** | Full recipe integration — every Create recipe type appears in the recipe viewer with correct catalysts and descriptions. |
+| **Curios** | Allows Create wearables such as the Backtank to occupy dedicated Curios slots instead of armour slots. |
+| **Farmer's Delight** | Shared food-processing recipes so Farmer's Delight crops work with Create's Mechanical Saw, Mixer, and Basin. |
+| **Sodium** | Rendering compatibility layer so Create's animated contraptions and flywheel-rendered blocks work correctly alongside Sodium's optimised renderer. |
+| **Xaero's Map / Trains** | Train map integration surfaced through the `trainmap` compat module so trains and stations appear on Xaero's minimap. |
+
+<Note>
+  This repository targets **NeoForge** only. A separate community-maintained Fabric port is available at [github.com/Fabricators-of-Create/Create](https://github.com/Fabricators-of-Create/Create).
+</Note>
+
+## Current version
+
+| Component | Version |
+|-----------|---------|
+| Create | **6.0.11** |
+| Minecraft | **1.21.1** |
+| NeoForge | **21.1.219** |
+| Ponder library | 1.0.82 |
+| Flywheel | 1.0.6 |
+
+Full patch notes are maintained in the project's `changelog.md`. The latest release (6.0.11) ships performance optimisations for contraption collision, railway login handling, and over forty bug fixes spanning belts, fluid networks, and CC: Tweaked compatibility.

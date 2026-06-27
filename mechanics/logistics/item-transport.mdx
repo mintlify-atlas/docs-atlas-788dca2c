@@ -1,0 +1,98 @@
+---
+title: "Item Transport: Belts, Funnels, and Chutes in Create"
+sidebarTitle: "Item Transport"
+description: "Move items across your factory with Mechanical Belts, Funnels, Smart Chutes, and Brass Tunnels. Learn routing, priority, and throughput basics."
+---
+
+Create's logistics system moves items **physically through the world** — you can watch every iron ingot ride a belt, tumble down a chute, or arc through the air from an ejector to a waiting depot. This physical visibility is one of the mod's defining features, and understanding the building blocks of the transport layer is essential for designing factories that scale beyond hand-fed crafting tables.
+
+## Mechanical Belt
+
+The Mechanical Belt is the backbone of most Create logistics setups. It spans between two **Belt Pulleys** and carries items along its surface at a speed proportional to the belt's RPM.
+
+**Key properties:**
+
+| Property | Value | Config key |
+|---|---|---|
+| Maximum belt length | 20 blocks | `maxBeltLength` |
+| Supported orientations | Horizontal, diagonal (±1 block height), vertical | — |
+| Item speed | Scales with RPM of the driving pulley | — |
+
+Belt segments can go in any of the three orientations in a single run — a belt can ascend diagonally from ground level to a second floor, then continue horizontally, as long as both pulleys are part of the same kinetic network.
+
+Items placed on a running belt are transported at the belt's surface speed. Faster belts move more items per second but require more rotational stress. Items that reach the end of a belt without an accepting surface fall off as drops.
+
+<Tip>
+  Use a **Depot** at the end of a belt rather than letting items fall. Depots hold items in place for actors (Mechanical Arms, Deployers, Presses) to interact with, and they don't consume any rotational stress.
+</Tip>
+
+## Funnels
+
+Funnels bridge the gap between belt transport and block inventories (chests, vaults, basins, etc.). They can be oriented to pull items *out of* an inventory onto a belt, or push items *into* an inventory from a belt — the facing direction determines which.
+
+<CardGroup cols={2}>
+  <Card title="Andesite Funnel" icon="funnel">
+    The basic unfiltered funnel. Inserts or extracts one item at a time. Can be mounted directly on a block face or on the surface of a belt to interact with items passing by. No filter capability.
+  </Card>
+  <Card title="Brass Funnel" icon="funnel-brass">
+    An upgraded funnel that supports a **filter** in its slot. Only items matching the filter are transferred. Also supports a stack size limit (set by scrolling on the funnel with an empty hand) so you can throttle how much it transfers per operation.
+  </Card>
+</CardGroup>
+
+Funnels can be mounted in two ways:
+- **On a block face** — inserts into or extracts from an inventory on the adjacent face.
+- **On a belt surface** — picks up items from the belt passing underneath (extraction), or deposits items onto the belt (insertion).
+
+A Funnel with a redstone signal is suppressed — it won't transfer until the signal is removed.
+
+## Chute
+
+Chutes are vertical item conduits. Items dropped into the top of a chute fall down through connected chute segments and exit at the bottom. A fan blowing upward through a chute can reverse the flow, pushing items upward.
+
+<CardGroup cols={2}>
+  <Card title="Chute" icon="chute">
+    Simple vertical conduit. Items pass through freely. Chutes connect automatically when placed directly above or below another chute.
+  </Card>
+  <Card title="Smart Chute" icon="chute-smart">
+    A chute with a filter slot. Items matching the filter pass through; items that don't match are blocked and accumulate at the filter point. Useful for sorting vertical drops into different destinations.
+  </Card>
+</CardGroup>
+
+<Note>
+  Chutes transfer items passively — no rotational power is required. The only exception is upward transport, which requires a fan providing upward airflow through the chute column.
+</Note>
+
+## Brass Tunnel
+
+The Brass Tunnel sits on top of a belt and intercepts items passing through it, routing them to one or more connected outputs (adjacent belts branching off the tunnel's sides).
+
+**Distribution modes** (set by scrolling on the tunnel):
+
+| Mode | Behaviour |
+|---|---|
+| **Round Robin** | Cycles through available outputs in order, one item per output per cycle. |
+| **Prefer** | Always sends to the first valid output; falls back to the next only when the preferred output is full or filtered. |
+| **Force** | Sends every item to a specific output regardless of other options. |
+| **Randomize** | Picks an output at random each time an item arrives. |
+| **Synchronize** | Holds items until all connected tunnels in a group have an item, then releases simultaneously. |
+
+Each output port of a Brass Tunnel has its own independent filter slot, giving you fine-grained control over which items go where.
+
+Multiple Brass Tunnels can be connected side-by-side on a belt; they share their distribution mode and cooperate as a single extended routing block.
+
+## Depot and Item Ejector
+
+<CardGroup cols={2}>
+  <Card title="Depot" icon="depot">
+    A flat staging platform that holds items in place. Items placed on a Depot don't move unless acted on by a Mechanical Arm, Deployer, or other actor. Depots are ideal for in-place processing — for example, positioning one beneath a Mechanical Press to press items without a contraption.
+  </Card>
+  <Card title="Item Ejector" icon="ejector">
+    Launches items in an arc to a target Depot up to **32 blocks** away (`maxEjectorDistance`). The ejector scans for a valid target Depot every 120 ticks by default (`ejectorScanInterval`). Power it with a redstone signal or set it to always-on from its scroll menu. Useful for bridging gaps or sending items up to a higher level without a belt.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Place a Depot directly under a **Mechanical Press** and feed it with a Funnel. Items arrive on the Depot, the Press stamps them, and a second Funnel extracts the output — all without building a contraption. This is often the simplest auto-pressing setup for early game.
+</Tip>
+
+For detailed information on filtering items at Funnels, Tunnels, and other logistics blocks, see [Filtering Items](/mechanics/logistics/filtering).

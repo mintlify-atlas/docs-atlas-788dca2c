@@ -1,0 +1,163 @@
+---
+title: "Create NeoForge Events: Hooking Into Create's Lifecycle"
+sidebarTitle: "Events"
+description: "Create fires NeoForge events for block entity behaviour attachment, pipe collisions, and track graph merges. Subscribe to these events to extend Create's blocks and systems."
+---
+
+Create fires NeoForge bus events at key lifecycle points so that addon mods can observe and extend its behaviour without modifying internal classes. All events in `com.simibubi.create.api.event` are stable public API and are posted on the **NeoForge event bus** (not the mod bus).
+
+## BlockEntityBehaviourEvent
+
+`com.simibubi.create.api.event.BlockEntityBehaviourEvent`
+
+This event fires just before a `SmartBlockEntity` is deserialised from NBT, and also when a fresh block entity is placed in the world. Use it to attach a new `BlockEntityBehaviour` to any of Create's smart block entities, or to replace an existing one.
+
+Because the event fires before NBT is read, any behaviours you attach here will have full access to the block entity's saved data through `BlockEntityBehaviour#read()`.
+
+### Methods
+
+| Method | Description |
+|---|---|
+| `forType(BlockEntityType<T> type, Consumer<T> action)` | Run `action` only if the block entity matches `type`. Safely casts the entity for you. |
+| `attach(BlockEntityBehaviour behaviour)` | Add (or replace) a behaviour on the block entity, keyed by `behaviour.getType()`. |
+| `remove(BehaviourType<?> type)` | Remove a previously registered behaviour of the given type, returning it. |
+
+### Example
+
+```java
+// Subscribe on the NeoForge event bus:
+neoForgeEventBus.addListener((BlockEntityBehaviourEvent event) -> {
+    event.forType(AllBlockEntityTypes.FUNNEL.get(), be -> {
+        event.attach(new FunFunnelBehaviour(be));
+    });
+});
+```
+
+<Note>
+  Behaviours attached via this event are available during `BlockEntityBehaviour#initialize()` and have access to the initial NBT during `BlockEntityBehaviour#read()`. If the block entity was just placed (not loaded from disk), `blockEntityData` will be empty.
+</Note>
+
+<Tip>
+  Use `event.remove(SomeBehaviourType.TYPE)` with caution — removing a behaviour that Create relies on internally can cause unexpected crashes or block entity failures.
+</Tip>
+
+---
+
+## PipeCollisionEvent
+
+`com.simibubi.create.api.event.PipeCollisionEvent`
+
+This event fires when two fluids meet inside a pipe network or when a pipe fluid encounters a fluid already present in the world. By default, Create produces cobblestone (water + lava) or obsidian, but you can override the result for any fluid combination.
+
+The event has two subtypes:
+
+### PipeCollisionEvent.Flow
+
+Fires when **two fluids collide inside a pipe** (both are flowing through the network).
+
+```java
+neoForgeEventBus.addListener((PipeCollisionEvent.Flow event) -> {
+    Fluid first = event.getFirstFluid();
+    Fluid second = event.getSecondFluid();
+    Level level = event.getLevel();
+    BlockPos pos = event.getPos();
+
+    // Override the result block placed at the collision point
+    if (first == Fluids.WATER && second == MyFluids.ACID.get()) {
+        event.setState(Blocks.GLASS.defaultBlockState());
+    }
+});
+```
+
+| Method | Description |
+|---|---|
+| `getFirstFluid()` | The first fluid in the collision |
+| `getSecondFluid()` | The second fluid in the collision |
+| `getLevel()` | The world in which the collision occurs |
+| `getPos()` | The block position of the collision |
+| `getState()` | The current result `BlockState` to be placed (may be `null`) |
+| `setState(BlockState)` | Override the block placed at the collision point; pass `null` to place nothing |
+
+### PipeCollisionEvent.Spill
+
+Fires when a **pipe fluid meets a fluid already present in the world** (e.g., a pipe opening into a lava lake).
+
+```java
+neoForgeEventBus.addListener((PipeCollisionEvent.Spill event) -> {
+    Fluid worldFluid = event.getWorldFluid();
+    Fluid pipeFluid = event.getPipeFluid();
+    // Suppress cobblestone formation for a specific combination
+    if (worldFluid == MyFluids.COOLANT.get()) {
+        event.setState(null);
+    }
+});
+```
+
+| Method | Description |
+|---|---|
+| `getWorldFluid()` | The fluid already present in the world |
+| `getPipeFluid()` | The fluid travelling through the pipe |
+| `getLevel()` | The world in which the spill occurs |
+| `getPos()` | The block position of the spill |
+| `getState()` / `setState(BlockState)` | Get or override the result block |
+
+<Info>
+  If `setState(null)` is called (or if no subscriber sets a state), no block is placed and the event produces no world change.
+</Info>
+
+---
+
+## TrackGraphMergeEvent
+
+`com.simibubi.create.api.event.TrackGraphMergeEvent`
+
+Fires when two separate train track networks (`TrackGraph` instances) are connected — for example, when a player lays a rail that bridges a gap between two existing networks. Create merges the smaller graph into the larger one and fires this event immediately after.
+
+This is particularly useful for addon mods that maintain per-network state (e.g., a custom train scheduling system that stores data per-graph UUID).
+
+### Methods
+
+| Method | Description |
+|---|---|
+| `getGraphMergedInto()` | The surviving `TrackGraph` that absorbed the other |
+| `getGraphMergedFrom()` | The `TrackGraph` that was merged away (it will no longer be active after this event) |
+
+### Example
+
+```java
+neoForgeEventBus.addListener((TrackGraphMergeEvent event) -> {
+    TrackGraph surviving = event.getGraphMergedInto();
+    TrackGraph dissolved = event.getGraphMergedFrom();
+
+    // Migrate any addon state keyed by graph ID
+    MyAddonData.migrateGraph(dissolved.id, surviving.id);
+});
+```
+
+<Warning>
+  The `mergedFrom` graph is effectively destroyed after this event. Do not retain strong references to it — use `getGraphMergedInto()` going forward for any network-level operations.
+</Warning>
+
+---
+
+## Subscribing to events
+
+All three events are posted on the **NeoForge event bus**, not the mod-loading bus. Use either the annotation approach or the programmatic approach:
+
+```java
+// Option A — annotation-based (static methods)
+@Mod.EventBusSubscriber(modid = "mymod", bus = Mod.EventBusSubscriber.Bus.NEOFORGE)
+public class MyEventHandlers {
+    @SubscribeEvent
+    public static void onBehaviourEvent(BlockEntityBehaviourEvent event) {
+        // ...
+    }
+}
+
+// Option B — programmatic (instance methods, registered in mod constructor)
+NeoForge.EVENT_BUS.addListener(this::onBehaviourEvent);
+```
+
+<Note>
+  Events in `com.simibubi.create.api.event` are **stable public API**. Events in other Create packages (such as `com.simibubi.create.content`) are internal and may be removed or changed without notice.
+</Note>

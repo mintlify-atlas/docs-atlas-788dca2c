@@ -1,0 +1,164 @@
+---
+title: "Contraptions: Moving Structures in Create"
+sidebarTitle: "Contraptions"
+description: "Contraptions are assemblies of blocks that move together — pushed by pistons, rotated by bearings, or carried by trains. Learn how they work and what limits apply."
+---
+
+A **contraption** is a multi-block structure that moves as a single rigid unit. When a mechanical mover assembles a contraption, it lifts a collection of connected blocks out of the world, turns them into a single moving entity, and carries them — along with any block entities, stored items, seated passengers, and active actors — through the world. When the contraption disassembles, every block is placed back exactly where it ended up. This system is the engine behind Create's most spectacular builds: rotating sawmills, travelling drills, moving bridges, flying airships, and underground mining platforms.
+
+## How Contraptions Work
+
+Every contraption requires a **mechanical mover** — a block that initiates movement and acts as the anchor point. The mover collects all structurally connected blocks reachable from its attachment face and assembles them into the contraption entity. The assembled structure then moves as one piece, preserving the relative positions of every block within it.
+
+<Steps>
+  <Step title="Place the mechanical mover">
+    Choose a mover appropriate for the motion you want: a Mechanical Piston for linear push, a Mechanical Bearing for rotation, a Rope Pulley for vertical lift, or a Gantry Carriage for sliding along a track.
+  </Step>
+  <Step title="Build the structure">
+    Attach blocks directly to the mover's push face (for pistons) or to the shaft face (for bearings). Blocks must be physically adjacent — diagonals alone do not count as connected. Use Chassis blocks to collect blocks that are not directly in line.
+  </Step>
+  <Step title="Provide rotational force">
+    The mover itself is a kinetic consumer. Supply it with sufficient RPM and stress capacity from a generator network. Higher RPM causes the contraption to move faster.
+  </Step>
+  <Step title="Activate">
+    Supply a Redstone signal (for pistons) or simply ensure the mover has rotational input (for bearings). The contraption assembles automatically and begins moving. To stop, remove the Redstone signal or disconnect rotation.
+  </Step>
+</Steps>
+
+## Assembly Rules
+
+Before a contraption can move, it must be successfully assembled. Understanding the rules that govern assembly prevents frustrating failures.
+
+<CardGroup cols={2}>
+  <Card title="Physical connectivity" icon="link">
+    Blocks must be touching face-to-face to be included. Blocks that are only diagonally adjacent, or that float without support, are not collected unless a Chassis block bridges the gap.
+  </Card>
+  <Card title="Chassis range" icon="expand">
+    A **Chassis** block extends the collection range in one axis by up to `maxChassisRange` blocks (default: **16**). Sticky Chassis use Super Glue to grab adjacent blocks; non-sticky Chassis only collect blocks along their own axis.
+  </Card>
+  <Card title="Block count limit" icon="cubes">
+    A single contraption may contain at most `maxBlocksMoved` blocks (default: **2048**). Attempting to assemble a structure larger than this causes the assembly to fail with no movement.
+  </Card>
+  <Card title="Immovable blocks" icon="lock">
+    Some blocks refuse to be moved. By default, **Obsidian** and **Reinforced Deepslate** are `UNMOVABLE` — attempting to assemble a contraption that contains them will fail. These limits are configurable (see Config Reference below).
+  </Card>
+</CardGroup>
+
+### ContraptionMovementSetting
+
+Each block in Create's registry can be assigned one of three movement settings, defined in `ContraptionMovementSetting.java`:
+
+| Setting | Behaviour |
+|---|---|
+| `MOVABLE` | Block can be freely assembled into any contraption and moved without restriction. |
+| `NO_PICKUP` | Block can be mounted onto a contraption and moved, but if it is present on a **Minecart Contraption**, that contraption cannot be picked up and stored as an item. Mob Spawners and Budding Amethyst use this setting by default. |
+| `UNMOVABLE` | Block cannot be included in any contraption. Attempting to assemble a contraption containing this block causes assembly to fail. Obsidian and Reinforced Deepslate use this setting by default. |
+
+## Types of Contraptions
+
+Create offers several different movers, each suited to a different kind of motion.
+
+<CardGroup cols={2}>
+  <Card title="Mechanical Piston" icon="arrow-right">
+    **Motion: Linear (push/pull)**
+
+    Attaches Extension Poles behind the piston head to extend its range. The contraption is pushed forward as the piston extends and pulled back when it retracts. Maximum Extension Poles: **64** (`maxPistonPoles`). Found in `content/contraptions/piston`.
+  </Card>
+  <Card title="Mechanical Bearing" icon="rotate">
+    **Motion: Rotational**
+
+    The structure on the bearing's front face rotates around the bearing's axis. Rotation speed matches the incoming RPM divided by the bearing's internal ratio. Used for windmills, rotating platforms, Ferris wheels, and clockwork builds. Found in `content/contraptions/bearing`.
+  </Card>
+  <Card title="Rope Pulley" icon="arrow-up">
+    **Motion: Vertical (up/down)**
+
+    Lowers or raises a structure hanging from the pulley's bottom face on a rope. Maximum rope length: **384 blocks** (`maxRopeLength`). Useful for elevators and mining platforms. Found in `content/contraptions/pulley`.
+  </Card>
+  <Card title="Gantry Shaft & Carriage" icon="arrows-left-right">
+    **Motion: Linear along a track**
+
+    A Gantry Carriage slides along Gantry Shafts. The carriage moves when the shaft spins; structures attached to the carriage travel with it. Gantry systems can be chained for multi-axis movement. Found in `content/kinetics/gantry`.
+  </Card>
+  <Card title="Elevator Contact" icon="elevator">
+    **Motion: Vertical (elevator)**
+
+    The Elevator Contact system provides a more controlled vertical movement with defined stop floors. Contraptions travel between contact points on a Rope Pulley shaft. Found in `content/contraptions/elevator`.
+  </Card>
+  <Card title="Minecart Contraption" icon="train-subway">
+    **Motion: Along rails**
+
+    Attach a contraption to a Minecart or Furnace Minecart. The cart carries the assembled structure along any rail track, including curves and slopes. The contraption can be picked up and re-placed in survival mode if no `NO_PICKUP` blocks are present. Found in `content/contraptions/minecart`.
+  </Card>
+  <Card title="Train (Bogey-based)" icon="train">
+    **Motion: Along train tracks**
+
+    The largest scale of contraption movement. Train cars use Bogeys placed on Create's Train Tracks. Multiple cars can be coupled into a full train. Supports passenger riding, redstone scheduling, and station automation. Found in `content/trains` (Create Trains system).
+  </Card>
+</CardGroup>
+
+## Items and Storage on Contraptions
+
+Contraptions carry block entity data with them, which means any block that stores items — Chests, Barrels, Vaults, Fluid Tanks — retains its inventory while moving. When the contraption disassembles, the storage blocks are placed back with their contents intact.
+
+<CardGroup cols={2}>
+  <Card title="Automatic item collection" icon="inbox">
+    When `moveItemsToStorage` is `true` (the default), items mined or harvested by contraption actors are automatically deposited into the nearest storage block on the same contraption. No piping required — the contraption is its own portable warehouse.
+  </Card>
+  <Card title="Portable Storage Interface" icon="plug">
+    The **Portable Storage Interface (PSI)** allows external pipes, funnels, or players to push and pull items from a moving contraption's storage. Place one on the contraption and one in the world facing the contraption's path; they pair up as the contraption passes. Found in `content/contraptions/actors/psi`.
+  </Card>
+</CardGroup>
+
+## Actors — Behaviour While Moving
+
+An **actor** is a block that performs a world-interaction at every position the contraption visits. Actors are what make contraptions genuinely useful beyond decoration — a moving drill contraption can mine an entire tunnel while a piston pushes it forward.
+
+<CardGroup cols={3}>
+  <Card title="Mechanical Drill" icon="drill">
+    Breaks blocks in the contraption's path. Drops are collected into on-board storage if `moveItemsToStorage` is enabled.
+  </Card>
+  <Card title="Mechanical Saw" icon="saw">
+    Breaks logs and other saw-compatible blocks, producing processed outputs (planks from logs, etc.).
+  </Card>
+  <Card title="Deployer" icon="hand-pointer">
+    Right-clicks or left-clicks blocks and entities at its position. Can plant crops, place blocks, or interact with machines. The item it uses comes from its own filter or from on-board storage.
+  </Card>
+  <Card title="Harvester" icon="wheat">
+    Harvests fully grown crops at each position, optionally replanting them (`harvesterReplants = true` by default). Can be configured to also break partially grown crops (`harvestPartiallyGrown`).
+  </Card>
+  <Card title="Plough" icon="shovel">
+    Tills soil and clears snow layers and short plants from the contraption's path.
+  </Card>
+  <Card title="Portable Storage Interface" icon="plug">
+    Acts as the contraption-side half of a transfer pair (see storage section above). Found in `content/contraptions/actors/psi`.
+  </Card>
+</CardGroup>
+
+<Note>
+  Actors are triggered at every block position the contraption occupies during movement, not just at the start and end. A drill on a piston contraption that extends 10 blocks will break all 10 blocks in its path in sequence.
+</Note>
+
+For a full breakdown of each actor's behaviour, filter options, and combinations, see [Contraption Actors](/mechanics/contraptions/actors).
+
+## Config Reference
+
+All values below come from `CKinetics.java` and can be adjusted in the mod's `kinetics` config file.
+
+| Config Key | Default | Description |
+|---|---|---|
+| `maxBlocksMoved` | `2048` | Maximum blocks in any single contraption |
+| `maxChassisRange` | `16` | Maximum attachment range of a Chassis block |
+| `maxPistonPoles` | `64` | Maximum Extension Poles behind a Mechanical Piston |
+| `maxRopeLength` | `384` | Maximum rope length for a Rope Pulley (blocks) |
+| `spawnerMovement` | `NO_PICKUP` | Movement setting for Mob Spawner blocks |
+| `obsidianMovement` | `UNMOVABLE` | Movement setting for Obsidian blocks |
+| `reinforcedDeepslateMovement` | `UNMOVABLE` | Movement setting for Reinforced Deepslate blocks |
+| `amethystMovement` | `NO_PICKUP` | Movement setting for Budding Amethyst blocks |
+| `moveItemsToStorage` | `true` | Whether mined/harvested items are auto-deposited into on-board storage |
+| `survivalContraptionPickup` | `true` | Whether Minecart Contraptions can be picked up by players in survival mode |
+| `harvestPartiallyGrown` | `false` | Whether Harvesters break crops that are not fully grown |
+| `harvesterReplants` | `true` | Whether Harvesters replant crops after harvesting |
+
+<Note>
+  `survivalContraptionPickup = true` means a player can right-click a stopped Minecart Contraption with a Wrench to retrieve it as an item, preserving the entire assembled structure. This is the recommended way to relocate contraptions without manually rebuilding them, provided no `NO_PICKUP` blocks (such as Spawners) are part of the structure.
+</Note>

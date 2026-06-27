@@ -1,0 +1,209 @@
+---
+title: "Create Mod Compatibility: Integrations and Soft Dependencies"
+sidebarTitle: "Compatibility"
+description: "Create integrates with CC:Tweaked for Lua automation, JEI/REI for recipe viewing, Curios for equipment slots, and several other popular mods."
+---
+
+Create includes built-in compatibility layers for several popular mods. These integrations are optional soft dependencies — Create works without them, but enables extra features when they're present. All compat classes live under `com.simibubi.create.compat.*` and are only loaded when the corresponding mod is detected on the classpath.
+
+## CC:Tweaked (ComputerCraft)
+
+Create provides a `ComputerBehaviour` system that lets computers interact with certain Create blocks via the standard CC:Tweaked peripheral API. The integration is enabled by default when CC:Tweaked is present (`cc_tweaked_version = 1.116.1` in Create's build).
+
+### Computer Events
+
+Create blocks fire computer events by calling `AbstractComputerBehaviour.prepareComputerEvent(ComputerEvent)` on the block entity's behaviour. The following event classes are defined in `com.simibubi.create.compat.computercraft.events`:
+
+<CardGroup cols={2}>
+  <Card title="KineticsChangeEvent" icon="rotate">
+    Fired when a kinetic block's network state changes.
+
+    ```java
+    public class KineticsChangeEvent implements ComputerEvent {
+        public float speed;
+        public float capacity;
+        public float stress;
+        public boolean overStressed;
+    }
+    ```
+  </Card>
+  <Card title="StationTrainPresenceEvent" icon="train">
+    Fired when a train is imminent, arrives at, or departs from a Train Station.
+
+    ```java
+    public class StationTrainPresenceEvent implements ComputerEvent {
+        public enum Type {
+            IMMINENT("train_imminent"),
+            ARRIVAL("train_arrival"),
+            DEPARTURE("train_departure");
+        }
+        public Type type;
+        public @NotNull Train train;
+    }
+    ```
+  </Card>
+  <Card title="TrainPassEvent" icon="arrow-right">
+    Fired when a train passes a signal or detector block.
+
+    ```java
+    public class TrainPassEvent implements ComputerEvent {
+        public @NotNull Train train;
+        public boolean passing; // true = entering, false = leaving
+    }
+    ```
+  </Card>
+  <Card title="SignalStateChangeEvent" icon="traffic-light">
+    Fired when a railway signal changes state.
+
+    ```java
+    public class SignalStateChangeEvent implements ComputerEvent {
+        public SignalBlockEntity.SignalState state;
+    }
+    ```
+  </Card>
+  <Card title="PackageEvent" icon="package">
+    Fired when a package passes through a Package Port.
+
+    ```java
+    public class PackageEvent implements ComputerEvent {
+        public @NotNull ItemStack box;
+        public String status;
+    }
+    ```
+  </Card>
+  <Card title="RepackageEvent" icon="box">
+    Fired when a package is repackaged by a Package Port.
+  </Card>
+</CardGroup>
+
+### AbstractComputerBehaviour
+
+Blocks that support computer interaction add an `AbstractComputerBehaviour` to their block entity. Your addon can fire events to any attached computer by calling `prepareComputerEvent`:
+
+```java
+public class AbstractComputerBehaviour extends BlockEntityBehaviour {
+    public static final BehaviourType<AbstractComputerBehaviour> TYPE = new BehaviourType<>();
+
+    public boolean hasAttachedComputer() { ... }
+    public void prepareComputerEvent(@NotNull ComputerEvent event) { ... }
+    public IPeripheral getPeripheralCapability() { ... }
+}
+```
+
+### Lua Example
+
+Computers can listen to Create events from Lua using `os.pullEvent`:
+
+```lua
+-- On a computer connected to a Train Station peripheral:
+while true do
+  local event, data = os.pullEvent("create:train_arrival")
+  print("Train arrived!")
+end
+
+-- Listen for kinetics changes on a connected Create block:
+while true do
+  local event, speed, capacity, stress, overstressed = os.pullEvent("create:kinetics_change")
+  if overstressed then
+    redstone.setOutput("right", true)
+  end
+end
+```
+
+## JEI / REI (Recipe Viewers)
+
+All Create processing recipes appear automatically in JEI and REI without any extra configuration. Create registers a dedicated recipe category for each machine type:
+
+- Crushing Wheels
+- Millstone
+- Mechanical Press (Pressing)
+- Mechanical Press + Basin (Compacting)
+- Mechanical Mixer + Basin (Mixing)
+- Deployer
+- Mechanical Saw (Cutting)
+- Encased Fan (Splashing, Haunting, and any custom fan processing types)
+- Sequenced Assembly
+
+The **Stock Keeper** screen synchronises its search field with JEI/REI. The sync mode is configurable in `create-client.toml` under `syncRecipeViewerSearch` with four modes: `SYNC_BOTH`, `SYNC_TO_VIEWER`, `SYNC_FROM_VIEWER`, and `NONE`.
+
+## Curios
+
+Create uses Curios API slots for wearable equipment items:
+
+- **Engineer's Goggles** — head slot
+- **Back Tank** — back slot
+- **Other Create equipment items**
+
+Curios `9.2.2` is the version targeted in Create's current build. If Curios is absent, Create falls back to vanilla equipment slots where possible.
+
+## Farmer's Delight
+
+When Farmer's Delight is present (`farmers_delight_version = 1.21.1-1.2.9`), Create adds Cutting Board recipes for relevant Create materials. This integration is enabled by `farmers_delight_enable = true` in Create's build configuration.
+
+## Sodium
+
+Create's Flywheel-based GPU rendering includes a Sodium compatibility layer targeting Sodium `0.6.9`. This allows Flywheel's instanced rendering to coexist with Sodium's chunk rendering pipeline. If Sodium is absent, Flywheel falls back to its own rendering path.
+
+## Xaero's Map
+
+When Xaero's Minimap or Xaero's World Map is installed, Create overlays train positions and railway network information on the map. This feature was refined in Create 6.0.10.
+
+## Writing Your Own Compat
+
+<Steps>
+  <Step title="Guard class loading">
+    Keep all references to target-mod classes inside a dedicated compat class that is only instantiated when the mod is present. Direct class references in your main class will cause a crash if the target mod is absent.
+
+    ```java
+    // MyCompatLoader.java — only instantiated when target mod is present
+    public class MyCompatLoader {
+        public static void init() {
+            // Safe to reference TargetModClass here
+        }
+    }
+    ```
+  </Step>
+  <Step title="Check mod presence">
+    Use NeoForge's `ModList` to guard instantiation:
+
+    ```java
+    import net.neoforged.fml.ModList;
+
+    @Mod("mymod")
+    public class MyMod {
+        public MyMod(IEventBus modBus) {
+            if (ModList.get().isLoaded("target_mod")) {
+                MyCompatLoader.init();
+            }
+        }
+    }
+    ```
+  </Step>
+  <Step title="Register compat event listeners conditionally">
+    If your compat code subscribes to events, register its event listener inside the same `isLoaded` guard:
+
+    ```java
+    if (ModList.get().isLoaded("target_mod")) {
+        modBus.addListener(MyCompatLoader::onRegister);
+        NeoForge.EVENT_BUS.addListener(MyCompatLoader::onWorldLoad);
+    }
+    ```
+  </Step>
+</Steps>
+
+<Note>
+  Create's own compat classes under `com.simibubi.create.compat.*` are **not public API**. Their internal structure, class names, and event signatures may change between versions. Reference Create's compat code for inspiration, but build your own compat layer independently.
+</Note>
+
+<Tip>
+  When soft-depending on a mod, declare it in your `neoforge.mods.toml` as a dependency with `type = "optional"`. This ensures NeoForge loads your mod after the target mod when it is present, without requiring it.
+
+  ```toml
+  [[dependencies.mymod]]
+      modId = "target_mod"
+      type = "optional"
+      versionRange = "[1.0,)"
+      ordering = "AFTER"
+      side = "BOTH"
+  ```
+</Tip>

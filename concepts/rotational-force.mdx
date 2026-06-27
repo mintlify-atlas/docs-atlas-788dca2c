@@ -1,0 +1,92 @@
+---
+title: "Rotational Force: How Create Moves the World"
+sidebarTitle: "Rotational Force"
+description: "Create's machines run on Rotational Force — a network of spinning shafts, gears, and belts. Learn how RPM, direction, and network topology work together."
+---
+
+Create does not use Redstone Flux or Forge Energy to power its machines. Instead, every mechanical device in the mod runs on **Rotational Force** — physical spinning motion that travels through a connected network of shafts, gears, and belts. If something is spinning, it has rotational force; if it stops spinning, your machines stop working. Understanding how that rotation is generated, transmitted, and consumed is the foundation of every Create build.
+
+## RPM — Revolutions Per Minute
+
+Rotational force is measured in **RPM (Revolutions per Minute)**. RPM describes how fast a shaft or component is spinning, and it has two direct consequences: **productivity** and **stress**.
+
+- **Faster = more productive.** Most processing machines — Mechanical Presses, Millstones, Saws, and others — operate faster the higher the incoming RPM. A Millstone at 64 RPM grinds twice as fast as one running at 32 RPM.
+- **Faster = more stress.** Every kinetic component draws stress from the network proportional to its RPM. Running everything at maximum speed is only sustainable if you have the capacity to back it up.
+
+The maximum allowed rotation speed for any kinetic block is **256 RPM** by default (the `maxRotationSpeed` config value). Attempting to exceed this cap — for example, by gear-upping from an already fast source — will cause the network to shut down.
+
+<Info>
+  RPM is set by the **generator**, not by the machines consuming it. Every shaft in a directly connected network spins at the same speed. To run different machines at different speeds, you must isolate them onto separate networks or use a Rotation Speed Controller.
+</Info>
+
+## Direction Matters
+
+Rotational force has a direction — **clockwise** or **counter-clockwise** — relative to the axis of the shaft. Most machines accept rotation from either direction, but some are direction-sensitive:
+
+- **Crushing Wheels** require the two wheels to spin in opposite directions toward each other; reversing one will eject items instead of crushing them.
+- **Mechanical Mixers** and other basin-based machines work in either direction.
+- **Gearboxes** invert the direction of rotation on the axes perpendicular to input, and pass it unchanged on the parallel axis.
+
+When two incompatible rotational sources are connected — for example, a shaft spinning clockwise meeting one spinning counter-clockwise — the network enters a **stress conflict** and everything on it stops. Always trace your network if machines unexpectedly halt.
+
+<Warning>
+  Connecting two sources that spin in opposite directions on the same axis causes a network conflict. The entire network will stall until the conflict is resolved. Use a Gearbox or a Rotation Speed Controller to safely introduce a second source.
+</Warning>
+
+## Sources of Rotation
+
+Every kinetic network starts with at least one generator. Create provides a range of generators suited to different stages of progression and different build styles.
+
+<CardGroup cols={2}>
+  <Card title="Hand Crank" icon="hand">
+    The simplest generator. Requires a player to right-click and hold to spin. Generates low RPM and consumes food hunger over time (`crankHungerMultiplier` config). Good for bootstrapping early machines. Found in `content/kinetics/crank`.
+  </Card>
+  <Card title="Water Wheel" icon="droplet">
+    Placed in flowing water to generate a modest, passive rotation. Larger Water Wheels generate more capacity. No fuel required — just a river or aqueduct. Found in `content/kinetics/waterwheel`.
+  </Card>
+  <Card title="Windmill Bearing + Sails" icon="wind">
+    Attach Sail blocks (or Sail Frames) to a Windmill Bearing contraption. The bearing must have at least `minimumWindmillSails` (default: 8) sail-type blocks to assemble. Speed scales at 1 RPM per `windmillSailsPerRPM` (default: 8) sails. A 64-sail windmill produces 8 RPM. Found in `content/contraptions/bearing`.
+  </Card>
+  <Card title="Steam Engine" icon="flame">
+    Attaches to a Flywheel and is fuelled by a Blaze Burner and a fluid boiler. Produces high capacity and can scale with multiple engines on one flywheel. Found in `content/kinetics/steamEngine`.
+  </Card>
+  <Card title="Furnace Engine" icon="fire">
+    Draws rotational force from the heat of an active Furnace, Blast Furnace, or Smoker directly below it. Output scales with the furnace's fuel burn speed. A good mid-game option before boilers are available.
+  </Card>
+  <Card title="Creative Motor" icon="bolt">
+    Available only in creative mode. Outputs a configurable RPM and infinite stress capacity. Ideal for testing builds without worrying about generation. Found in `content/kinetics/motor`.
+  </Card>
+</CardGroup>
+
+## Transmitting Rotation
+
+Generating rotation is only half the problem — you also need to move it where it is needed. Create offers a full toolkit of transmission components.
+
+<Steps>
+  <Step title="Shafts">
+    The basic building block of any kinetic network. A **Shaft** extends rotation along one axis — the axis it is aligned to. You can encase shafts in various materials (Andesite, Brass) to protect them and improve aesthetics. Shafts do not change speed or direction — they are purely a conduit. Found in `content/kinetics/simpleRelays`.
+  </Step>
+  <Step title="Gearboxes">
+    A **Gearbox** is a 4-way junction block. It accepts rotation on one axis and re-emits it on the other three axes at the same speed but with direction inversion on perpendicular axes. Use Gearboxes to turn corners and distribute rotation to multiple branches. Found in `content/kinetics/gearbox`.
+  </Step>
+  <Step title="Small and Large Cogwheels">
+    When a **Small Cogwheel** meshes with a **Large Cogwheel**, the gear ratio changes speed. A small cog driving a large cog halves the speed (but doubles stress capacity); a large cog driving a small cog doubles the speed (but halves capacity). This is the primary way to adjust RPM within a network. Found in `content/kinetics/simpleRelays`.
+  </Step>
+  <Step title="Chain Drives">
+    **Chain Drives** connect two or more shafts at the same speed along a horizontal or vertical run without changing direction. Useful when shafts cannot be placed end-to-end. Found in `content/kinetics/chainDrive`.
+  </Step>
+  <Step title="Mechanical Belts">
+    A **Mechanical Belt** stretches between two Pulley shafts and transmits rotation while also serving as an item conveyor. Belts can be oriented in any straight horizontal or vertical line. Maximum belt length is 20 blocks by default (`maxBeltLength` config). Found in `content/kinetics/belt`.
+  </Step>
+  <Step title="Rotation Speed Controller">
+    The **Rotation Speed Controller** allows you to precisely set the output RPM to any value up to `maxRotationSpeed` (256 RPM). It consumes stress proportional to the speed difference between its input and its output. Use this when cogwheel ratios alone cannot hit your target speed. Found in `content/kinetics/speedController`.
+  </Step>
+</Steps>
+
+<Tip>
+  Use a **Rotation Speed Controller** when you need a precise RPM — for example, exactly 60 RPM for a contraption that moves at a specific rate. Dial the target speed in using its scroll wheel, and the controller handles the ratio automatically regardless of the input speed.
+</Tip>
+
+## Further Reading
+
+Understanding rotational force is inseparable from understanding how much power your network can sustain. Head to the [Stress System](/concepts/stress-system) page to learn how Stress Units (SU) scale with RPM and how to keep your networks balanced.

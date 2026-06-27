@@ -1,0 +1,175 @@
+---
+title: "Create Configuration Reference"
+sidebarTitle: "Configuration"
+description: "Complete reference for Create's server, client, and common config files. Covers kinetics, fluids, trains, schematics, and world generation settings."
+---
+
+Create's configuration is split across three TOML files managed by NeoForge's config system. The files are generated automatically on first launch and can be edited while the game is running — most settings take effect on reload without a restart. All paths below are relative to your Minecraft instance root.
+
+## Config Files
+
+| File | Type | Location | Description |
+|---|---|---|---|
+| `create-client.toml` | Client | `config/` | Visual, UI, and sound settings. Per-player. |
+| `create-common.toml` | Common | `config/` | World generation (ore rates, biome filters). |
+| `create-server.toml` | Server | `saves/<world>/serverconfig/` | Kinetics, fluids, trains, schematics, recipes. Stored per-world. |
+
+## Kinetics Config (`create-server.toml → kinetics`)
+
+These settings are exposed by `com.simibubi.create.infrastructure.config.CKinetics`.
+
+### General
+
+| Key | Default | Description |
+|---|---|---|
+| `disableStress` | `false` | Disable the stress mechanic entirely. All kinetic blocks operate without stress limits. |
+| `maxRotationSpeed` | `256 RPM` | Maximum allowed rotation speed for any kinetic block. |
+| `crushingDamage` | `4` | Damage dealt by active Crushing Wheels to entities. |
+| `minimumWindmillSails` | `8` | Number of sail-type blocks required for a Windmill to assemble. |
+| `windmillSailsPerRPM` | `8` | Additional sail blocks needed to increase Windmill speed by 1 RPM. |
+| `maxBeltLength` | `20 blocks` | Maximum span of a Mechanical Belt. |
+| `maxChainConveyorLength` | `32 blocks` | Maximum length of a chain conveyor connection. |
+| `maxChainConveyorConnections` | `4` | Maximum number of connections per chain conveyor block. |
+| `crankHungerMultiplier` | `0.01` | Exhaustion multiplier applied when turning a Hand Crank. |
+
+### Encased Fan
+
+| Key | Default | Description |
+|---|---|---|
+| `fanPushDistance` | `20 blocks` | Maximum distance a Fan can push entities. |
+| `fanPullDistance` | `20 blocks` | Maximum distance from which a Fan can pull entities. |
+| `fanProcessingTime` | `150 ticks` | Ticks required for a fan-based processing recipe to complete. |
+| `fanBlockCheckRate` | `30 ticks` | Game ticks between a Fan checking for obstructions in its air stream. |
+| `fanRotationArgmax` | `256 RPM` | Rotation speed at which a Fan reaches its maximum push/pull stats. |
+
+### Moving Contraptions
+
+| Key | Default | Description |
+|---|---|---|
+| `maxBlocksMoved` | `2048` | Maximum number of blocks in a contraption (Piston, Bearing, etc.). |
+| `maxPistonPoles` | `64` | Maximum number of extension poles behind a Mechanical Piston. |
+| `maxRopeLength` | `384 blocks` | Maximum length of rope off a Rope Pulley. |
+| `maxChassisRange` | `16` | Maximum attachment range of a chassis block. |
+| `maxCartCouplingLength` | `32` | Maximum distance between two coupled Minecarts. |
+| `rollerFillDepth` | `12` | Maximum depth of blocks filled by a Mechanical Roller. |
+| `survivalContraptionPickup` | `true` | Whether Minecart Contraptions can be picked up in survival mode. |
+
+### Speed and Capacity Classification
+
+These values affect tooltip colour-coding (goggle overlays) only — they do not change gameplay.
+
+| Key | Default | Description |
+|---|---|---|
+| `mediumSpeed` | `30 RPM` | Minimum speed to be classified as "medium". |
+| `fastSpeed` | `100 RPM` | Minimum speed to be classified as "fast". |
+| `mediumStressImpact` | `4 SU` | Minimum impact to display a yellow stress indicator. |
+| `highStressImpact` | `8 SU` | Minimum impact to display a red stress indicator. |
+| `mediumCapacity` | `256 SU` | Minimum capacity for a yellow capacity indicator. |
+| `highCapacity` | `1024 SU` | Minimum capacity for a green capacity indicator. |
+
+## Fluids Config (`create-server.toml → fluids`)
+
+From `com.simibubi.create.infrastructure.config.CFluids`:
+
+| Key | Default | Description |
+|---|---|---|
+| `fluidTankCapacity` | `8 buckets` | Fluid a single tank block can hold per block. |
+| `fluidTankMaxHeight` | `32 blocks` | Maximum height of a stacked Fluid Tank structure. |
+| `mechanicalPumpRange` | `16 blocks` | Maximum distance a Mechanical Pump can push or pull fluid on either side. |
+| `hosePulleyRange` | `128 blocks` | Maximum distance a Hose Pulley can draw fluid blocks from. |
+| `hosePulleyBlockThreshold` | `10000` | Minimum fluid block count before a source is considered infinite (`-1` to disable). |
+| `fillInfinite` | `false` | Whether Hose Pulleys should continue filling above-threshold infinite sources. |
+| `bottomlessFluidMode` | `ALLOW_BY_TAG` | Which fluids can be drawn infinitely (`ALLOW_BY_TAG`, `ALLOW_ALL`, `DENY_ALL`). |
+| `fluidFillPlaceFluidSourceBlocks` | `true` | Whether Hose Pulleys can place fluid source blocks. |
+| `pipesPlaceFluidSourceBlocks` | `true` | Whether open-ended Fluid Pipes can place fluid source blocks. |
+
+## Trains Config (`create-server.toml → trains`)
+
+From `com.simibubi.create.infrastructure.config.CTrains`:
+
+| Key | Default | Description |
+|---|---|---|
+| `trainsCauseDamage` | `true` | Whether moving trains hurt colliding mobs and players. |
+| `maxTrackPlacementLength` | `32` | Maximum length of track placed in one batch or turn. |
+| `maxAssemblyLength` | `128` | Maximum length of a Train Station's assembly track. |
+| `maxBogeyCount` | `20` | Maximum number of bogeys assembled as a single train. |
+| `manualTrainSpeedModifier` | `0.75` | Speed of a manually controlled train relative to a scheduled one. |
+| `trainTopSpeed` | `28 blocks/s` | Top speed of a standard assembled train. |
+| `trainTurningTopSpeed` | `14 blocks/s` | Top speed of a standard train during a turn. |
+| `trainAcceleration` | `3 blocks/s²` | Acceleration of a standard assembled train. |
+| `poweredTrainTopSpeed` | `40 blocks/s` | Top speed of a powered (fuel-burning) train. |
+| `poweredTrainTurningTopSpeed` | `20 blocks/s` | Turning top speed of a powered train. |
+| `poweredTrainAcceleration` | `3 blocks/s²` | Acceleration of a powered train. |
+
+## Client Config (`create-client.toml`)
+
+From `com.simibubi.create.infrastructure.config.CClient`. These settings are per-player and stored in `config/create-client.toml`.
+
+### General
+
+| Key | Default | Description |
+|---|---|---|
+| `enableTooltips` | `true` | Show item descriptions on Shift and controls on Ctrl. |
+| `enableOverstressedTooltip` | `true` | Display a tooltip when looking at an overstressed component. |
+| `fanParticleDensity` | `0.5` | Density of fan air-stream particles (0–1). Higher = more particles. |
+| `filterItemRenderDistance` | `10 blocks` | Max distance at which items in filter slots are rendered. |
+| `rotateWhenSeated` | `true` | Whether the player rotates with a moving contraption while seated. |
+
+### Goggle Overlay
+
+| Key | Default | Description |
+|---|---|---|
+| `overlayOffsetX` | `20` | Horizontal pixel offset of the goggle overlay. |
+| `overlayOffsetY` | `0` | Vertical pixel offset of the goggle overlay. |
+| `overlayCustomColor` | `false` | Use custom colours for the goggle and hover overlays. |
+| `customBackgroundOverlay` | `0xf0100010` | Custom background colour (ARGB hex) when custom colours are enabled. |
+| `customBorderTopOverlay` | `0x505000ff` | Custom border top gradient colour (ARGB hex). |
+| `customBorderBotOverlay` | `0x5028007f` | Custom border bottom gradient colour (ARGB hex). |
+
+### Sound
+
+| Key | Default | Description |
+|---|---|---|
+| `enableAmbientSounds` | `true` | Make cogs rumble and machines clatter. |
+| `ambientVolumeCap` | `0.1` | Maximum volume modifier of ambient kinetic noise (0–1). |
+
+### Trains
+
+| Key | Default | Description |
+|---|---|---|
+| `mountedZoomMultiplier` | `3` | Camera zoom distance multiplier when seated on a train. |
+| `showTrainMapOverlay` | `true` | Show train positions and track networks on supported map mods. |
+| `trainMapColorTheme` | `RED` | Track network colour on map overlays. Values: `RED`, `GREY`, `WHITE`. |
+
+### Recipe Viewer Integration
+
+| Key | Default | Description |
+|---|---|---|
+| `syncRecipeViewerSearch` | `SYNC_BOTH` | How Stock Keeper search syncs with JEI/REI. Values: `SYNC_BOTH`, `SYNC_TO_VIEWER`, `SYNC_FROM_VIEWER`, `NONE`. |
+
+## Accessing Config in Code
+
+If your addon needs to read Create's config values at runtime, use the static accessors on `AllConfigs`:
+
+```java
+import com.simibubi.create.infrastructure.config.AllConfigs;
+
+// Server-side kinetics config:
+int maxBelt    = AllConfigs.server().kinetics.maxBeltLength.get();
+int fanTime    = AllConfigs.server().kinetics.fanProcessingTime.get();
+double medImpact = AllConfigs.server().kinetics.mediumStressImpact.get();
+
+// Fluids config:
+int tankCap    = AllConfigs.server().fluids.fluidTankCapacity.get();
+
+// Trains config:
+float topSpeed = AllConfigs.server().trains.trainTopSpeed.get();
+
+// Client config (client-side only):
+float density  = AllConfigs.client().fanParticleDensity.get();
+boolean sounds = AllConfigs.client().enableAmbientSounds.get();
+```
+
+<Warning>
+  `AllConfigs` is part of Create's **internal infrastructure** and is not considered public API. Its structure may change between Create versions. For settings your own mod exposes, define your own NeoForge config class rather than depending on Create's internal config objects.
+</Warning>

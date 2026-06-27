@@ -1,0 +1,171 @@
+---
+title: "Custom Fan Processing Types: Adding New Air Stream Recipes"
+sidebarTitle: "Fan Processing"
+description: "Register a custom FanProcessingType to add new catalyst blocks for Encased Fan air streams. Implement the type interface and register recipes using Create's data generation."
+---
+
+When an Encased Fan pushes an air stream through a catalyst block, items caught in the stream are transformed. Create ships four built-in processing types: **blasting** (lava or Blaze Burner), **haunting** (soul fire or Soul Blaze Burner), **smoking** (campfire or Blaze Burner at `SMOULDERING` heat), and **splashing** (water). Addon mods can register entirely new catalyst behaviours by implementing the `FanProcessingType` interface and registering it with Create's built-in registry.
+
+## The FanProcessingType Interface
+
+Every fan processing type must implement `com.simibubi.create.content.kinetics.fan.processing.FanProcessingType`. All methods are called server-side unless otherwise noted.
+
+```java
+public interface FanProcessingType {
+
+    /**
+     * Return true when the block or fluid at the given position should activate
+     * this processing type. Called every fan tick.
+     */
+    boolean isValidAt(Level level, BlockPos pos);
+
+    /**
+     * Higher priority types are checked first when multiple catalysts overlap.
+     * Built-in priorities: SPLASHING=400, HAUNTING=300, SMOKING=200, BLASTING=100.
+     */
+    int getPriority();
+
+    /**
+     * Return true if this item can be processed by this type.
+     * Returning false prevents the processing timer from starting.
+     */
+    boolean canProcess(ItemStack stack, Level level);
+
+    /**
+     * Transform the given stack. Return the list of output stacks, an empty list
+     * to consume the input without producing output, or null to indicate that
+     * processing failed or should not apply.
+     */
+    @Nullable
+    List<ItemStack> process(ItemStack stack, Level level);
+
+    /**
+     * Spawn ambient particles at the processing position while items are cooking.
+     * Called client-side every tick.
+     */
+    void spawnProcessingParticles(Level level, Vec3 pos);
+
+    /**
+     * Tint and optionally add extra particles to air-stream particles flowing
+     * through the catalyst zone. Called client-side.
+     */
+    void morphAirFlow(AirFlowParticleAccess particleAccess, RandomSource random);
+
+    /**
+     * Apply effects to entities caught inside the air stream (e.g. set on fire,
+     * add potion effects). Called server-side every tick.
+     */
+    void affectEntity(Entity entity, Level level);
+
+    // ── Static helpers ───────────────────────────────────────────────────────
+
+    /** Look up a registered type by its ResourceLocation string. */
+    @Nullable
+    static FanProcessingType parse(String str) { ... }
+
+    /** Return the highest-priority type active at the given position, or null. */
+    @Nullable
+    static FanProcessingType getAt(Level level, BlockPos pos) { ... }
+
+    // ── Inner interface ──────────────────────────────────────────────────────
+
+    interface AirFlowParticleAccess {
+        /** Set the ARGB tint of air-flow particles in the catalyst zone. */
+        void setColor(int color);
+
+        /** Set the opacity of the tinted particles (0–1). */
+        void setAlpha(float alpha);
+
+        /** Spawn an additional particle type with a given speed multiplier. */
+        void spawnExtraParticle(ParticleOptions options, float speedMultiplier);
+    }
+}
+```
+
+<Note>
+  `process()` returning `null` signals that the item could not be processed at all — the engine will not consume the item. Returning an **empty list** consumes the item and produces nothing (useful for "destroy on contact" behaviour).
+</Note>
+
+## Registering a Type
+
+Fan processing types live in the `create:fan_processing_type` registry, accessed via `CreateRegistries.FAN_PROCESSING_TYPE`. Use NeoForge's `DeferredRegister` in your mod initialiser:
+
+```java
+import com.simibubi.create.api.registry.CreateRegistries;
+import com.simibubi.create.content.kinetics.fan.processing.FanProcessingType;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+public class MyFanTypes {
+    public static final DeferredRegister<FanProcessingType> REGISTER =
+        DeferredRegister.create(CreateRegistries.FAN_PROCESSING_TYPE, "mymod");
+
+    public static final RegistryObject<FanProcessingType> FREEZING =
+        REGISTER.register("freezing", FreezingFanProcessingType::new);
+}
+```
+
+Then attach the register to your mod's event bus in your `@Mod` constructor:
+
+```java
+MyFanTypes.REGISTER.register(modEventBus);
+```
+
+<Steps>
+  <Step title="Implement FanProcessingType">
+    Create a class (or record) that implements all seven interface methods. Use `isValidAt` to detect your catalyst block or fluid tag, and set a unique `getPriority` value to control conflict resolution when multiple catalysts are present.
+  </Step>
+  <Step title="Register with DeferredRegister">
+    Declare a `DeferredRegister<FanProcessingType>` in a static initialiser class and call `.register(modEventBus)` during mod construction.
+  </Step>
+  <Step title="Add recipes (optional)">
+    If your type processes items using data-driven recipes, extend `StandardProcessingRecipeGen` and register it in your `GatherDataEvent`. See the [Custom Recipes](/addon-dev/custom-recipes) page for details.
+  </Step>
+</Steps>
+
+## Adding Recipes
+
+Fan processing recipes are fully data-driven JSON files. Create already ships recipe types for `splashing` and `haunting` that your datagen classes can target. For a **new** processing type you define yourself, add corresponding recipe JSON files under:
+
+```
+data/mymod/recipes/<your_recipe_type>/
+```
+
+Each recipe file should conform to Create's processing recipe format. A minimal splashing recipe (usable as a template) looks like:
+
+```json
+{
+  "type": "create:splashing",
+  "ingredients": [
+    { "item": "minecraft:gravel" }
+  ],
+  "results": [
+    { "item": "minecraft:sand", "count": 1 }
+  ]
+}
+```
+
+For custom recipe types you control, extend `StandardProcessingRecipeGen<YourRecipe>` in your datagen module and override `getRecipeType()` to return your `AllRecipeTypes` entry.
+
+## FanProcessingTypeRegistry
+
+`FanProcessingTypeRegistry` maintains a priority-sorted view of all registered types:
+
+```java
+// Internal — do not modify directly:
+public class FanProcessingTypeRegistry {
+    /** Unmodifiable, sorted descending by getPriority(). */
+    public static final List<FanProcessingType> SORTED_TYPES_VIEW = ...;
+}
+```
+
+`FanProcessingType.getAt(level, pos)` iterates `SORTED_TYPES_VIEW` and returns the first type whose `isValidAt` returns `true`. Because higher-priority types win, set your type's priority carefully — avoid colliding with Create's built-in priorities (100–400).
+
+JEI and REI pick up fan processing recipe categories automatically through Create's recipe integration layer. Each recipe type appears in its own category named after its registry key.
+
+<Tip>
+  When multiple catalyst blocks are stacked or adjacent, only the **highest-priority** matching type activates. Design your catalyst detection (`isValidAt`) to be as specific as possible to prevent unintended overrides of Create's built-in types.
+</Tip>
+
+<Note>
+  Processing only applies to items that are **fully inside the air stream** and positioned within the catalyst zone. Items at the edge of the stream's range will not be processed.
+</Note>

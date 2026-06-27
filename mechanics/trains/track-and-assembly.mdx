@@ -1,0 +1,162 @@
+---
+title: "Train Tracks and Assembly: Building Your First Train"
+sidebarTitle: "Track & Assembly"
+description: "Lay tracks, craft bogeys, and assemble a working Create train. Covers track types, curve tools, station placement, and the train assembly process."
+---
+
+Create's train system uses a graph-based rail network where trains ride on custom Track blocks rather than vanilla rails. Every piece of track you place registers as a node in a server-side `TrackGraph`, which trains use for pathfinding, signal management, and schedule execution. This architecture means your tracks must be physically connected as a single network for trains to navigate between stations.
+
+## Track Blocks and Placement
+
+The **Create Track** block (Andesite variant by default) is the core building unit of the rail system. Unlike vanilla rails, Create Track supports smooth Bézier curves, diagonal segments, and slopes — all handled through the same item.
+
+When you hold the Track item in your hand, the game renders ghost previews showing where curves and intersections will form. Track connects automatically to adjacent track blocks when placed — if two track ends point toward each other, the game generates a curved `BezierConnection` bridging them. You don't have to place the curve manually; just lay straight segments toward each other and the curve appears.
+
+Key placement behaviors:
+
+- **Straight track** runs along cardinal or diagonal axes (`x_ortho`, `z_ortho`, `diag`, `diag_2` shapes).
+- **Slope track** ascends or descends one block per track segment (`ascending` variants in `TrackShape`).
+- **Intersections** (cross shapes) form when two tracks overlap at the same block.
+- Track can be placed **underwater** — the block supports waterlogging via `ProperWaterloggedBlock`.
+- The maximum length of a single batch track placement is **32 blocks** by default (configurable up to 128 via `maxTrackPlacementLength` in the server config).
+
+<Info>
+Create Track is not interchangeable with vanilla rails. Trains assembled on Create Track cannot traverse vanilla rail and vice versa. Signals, stations, and all train features require Create's own track blocks.
+</Info>
+
+## Track Types
+
+Create's built-in track material system (`TrackMaterial`) means the same `TrackBlock` class can represent visually distinct materials. All variants behave identically for gameplay purposes.
+
+<CardGroup cols={3}>
+  <Card title="Standard Track" icon="train-track">
+    The default **Andesite Track**. Crafted from andesite casing and iron rails. Suitable for all train configurations.
+  </Card>
+  <Card title="Overgrown Track" icon="leaf">
+    A decorative variant with moss and foliage overgrowth. Functionally identical to standard track — purely cosmetic.
+  </Card>
+  <Card title="Portal Track" icon="circle-nodes">
+    A special track shape (`teleport` variant in `TrackShape`) that allows trains to pass through portals into other dimensions. Requires a `PortalTrackProvider` registered for the portal block type.
+  </Card>
+</CardGroup>
+
+### Portal Track Provider API
+
+The `PortalTrackProvider` interface (in `com.simibubi.create.api.contraption.train`) allows addon mods to connect Create Track through any portal type, not just Nether portals. The registry maps portal `Block` types to provider implementations:
+
+```java
+// Register a custom portal provider
+PortalTrackProvider.REGISTRY.register(MyMod.MY_PORTAL_BLOCK.get(), (level, face) -> {
+    // Return the exit face on the other side of the portal
+    return PortalTrackProvider.fromPortal(level, face, MY_DIM_A, MY_DIM_B, myPortal);
+});
+```
+
+Nether portals are handled natively by `AllPortalTracks`. The `TrackShape` portal variants (`TN`, `TS`, `TE`, `TW`) are placed automatically when a track segment enters a supported portal block.
+
+## Train Station
+
+A **Train Station** is a named waypoint block placed directly on a track. It serves as both a navigation destination and the assembly point for new trains.
+
+- Right-click the station to open its UI and set a name. Station names are used in schedules to route trains.
+- A station must be placed touching an existing track block — it targets the track via `TrackTargetingBehaviour`.
+- Multiple stations can share a connected track network; trains navigate between them using the graph.
+- Station blocks can accept a **Schedule item** placed into their inventory slot, which is automatically assigned to any train that arrives — enabling hands-free schedule distribution.
+
+<Note>
+Station names support wildcard matching (`*`) in schedule destination filters. A station named `Mine_North` is reachable by a schedule entry targeting `Mine_*`.
+</Note>
+
+## Bogeys
+
+Bogeys are the axle assemblies that physically attach a train body to the track. Each bogey block sits on top of a track block and acts as the connection point between the contraption structure and the rail graph.
+
+Create includes two bogey sizes, defined in `BogeySizes`:
+
+<CardGroup cols={2}>
+  <Card title="Small Bogey" icon="circle-small">
+    **Wheel radius:** ~0.41 blocks (`6.5/16`). Occupies a single block width. Used for compact or narrow train cars. Supports single-bogey carriages (if the bogey type allows it).
+  </Card>
+  <Card title="Large Bogey" icon="circle">
+    **Wheel radius:** ~0.78 blocks (`12.5/16`). Provides a wider stance. Required for heavier or wider carriage designs. Each size can be cycled in assembly mode by clicking with a Railway Casing in hand.
+  </Card>
+</CardGroup>
+
+Bogeys can also be placed **upside-down** under the track, allowing for suspended or hanging train carriages. While in assembly mode, looking downward at the track when clicking will anchor the bogey below rather than above.
+
+The bogey system is extensible — addons can register custom bogey styles via `BogeyStyle`, each with its own renderer and visual.
+
+## Assembling a Train
+
+Train assembly converts a static structure of blocks into a moving `CarriageContraption` entity. The station's assembly mode scans the track ahead for bogeys and builds the train from whatever blocks are sitting on top of them.
+
+<Steps>
+  <Step title="Place a Train Station on your track">
+    Right-click the station block to name it. The station targets the track block it is placed adjacent to. Make sure the track is straight at the station — assembly requires an axis-aligned track segment.
+  </Step>
+  <Step title="Enter Assembly Mode">
+    Right-click the station and click the **Assembly** button in the station UI. The station enters assembly mode, highlighted by a bounding box overlay extending along the track. Any train currently at this station is disassembled first (its blocks are returned to the world).
+  </Step>
+  <Step title="Place Bogey blocks on the track">
+    While in assembly mode, right-click a track block within the assembly area with a **Railway Casing** in hand to spawn a bogey on top of it. The first bogey must be placed at offset `0` — directly adjacent to the station's target track block. Subsequent bogeys must be at least 3 track blocks apart to allow carriage structure between them.
+  </Step>
+  <Step title="Build your train body on top of the bogeys">
+    Place any blocks on and around the bogeys to form the train car bodies. All blocks connected to a bogey (and not overlapping another bogey's carriage) become part of that carriage's contraption. Blocks can include storage, seats, fluid tanks, displays, mechanical actors, and more.
+  </Step>
+  <Step title="Add a Train Controls block">
+    At least one **Train Controls** block must be present on the train body. This is the driver's seat — a player right-clicks it to take manual control. The controls block also determines train direction: a controls block facing forward enables forward driving; a backward-facing one enables reverse.
+  </Step>
+  <Step title="Exit Assembly Mode to finalize the train">
+    Click **Assemble** in the station UI. The station scans the assembly area, builds each `CarriageContraption`, and launches the `Train` entity onto the graph. The train entity is now live and appears in the in-game train map overlay.
+  </Step>
+</Steps>
+
+<Warning>
+Assembly will fail if:
+- No bogey is at position 0 (directly in front of the station)
+- Two bogeys are fewer than 3 track blocks apart
+- No Train Controls block is found on the entire train
+- A bogey type that does not allow single-bogey carriages has no second bogey attached to the same carriage structure
+</Warning>
+
+## Driving a Train
+
+Once assembled, sit in the **Train Controls** block to take the wheel. Manual driving uses standard movement keys:
+
+- **W / Forward** — accelerate in the facing direction
+- **S / Back** — brake or reverse
+- **Space** — emergency brake
+
+Manual trains operate at a reduced speed compared to scheduled trains. The `manualTrainSpeedModifier` config value defaults to `0.75` — meaning a manually driven train reaches 75% of the top speed a scheduled train would achieve on the same track.
+
+Default speed values from `CTrains`:
+
+| Stat | Standard Train | Powered Train |
+|---|---|---|
+| Top Speed | 28 blocks/sec | 40 blocks/sec |
+| Turning Top Speed | 14 blocks/sec | 20 blocks/sec |
+| Acceleration | 3 blocks/sec² | 3 blocks/sec² |
+
+<Info>
+Trains are full contraptions — all contraption features apply inside the carriages. You can mount Mechanical Harvesters, deployers, fluid pipes, Portable Storage Interfaces, and even have passengers riding in seats. All actors operate normally while the train is in motion.
+</Info>
+
+## Train Map Overlay
+
+An in-game overlay displays your rail network, all active trains, and station locations. It is toggled via the dedicated keybind (default unbound, configurable in controls) and is enabled by default via the `showTrainMapOverlay` client config. Compatibility integrations with FTB Chunks, Xaero's Minimap, and JourneyMap (`compat/trainmap/`) push station waypoints automatically when those mods are loaded.
+
+<Tip>
+Pressing F3 while wearing Engineer's Goggles can reveal the track graph overlay, showing signal block boundaries and graph connectivity. The `showTrackGraphOnF3` config option (disabled by default) enables a full graph dump on the F3 debug screen for advanced debugging.
+</Tip>
+
+## Configuration Reference
+
+All train limits are configurable in `create-server.toml` under the `[trains]` section:
+
+| Config Key | Default | Range | Description |
+|---|---|---|---|
+| `maxTrackPlacementLength` | 32 | 16–128 | Max track blocks placed in one batch |
+| `maxAssemblyLength` | 128 | 5–512 | Max track length scanned during assembly |
+| `maxBogeyCount` | 20 | 1–200 | Max bogeys on a single assembled train |
+| `manualTrainSpeedModifier` | 0.75 | 0–∞ | Speed ratio for manually driven trains |
+| `trainsCauseDamage` | true | — | Whether trains hurt colliding entities |

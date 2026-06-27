@@ -1,0 +1,124 @@
+---
+title: "Create Registries: Extending Create's Registry System"
+sidebarTitle: "Registries"
+description: "Create exposes NeoForge-compatible registries for arm interaction points, fan processing types, display sources, contraption types, and more."
+---
+
+Create uses NeoForge's registry system with its own registry keys. The `CreateRegistries` class (in `com.simibubi.create.api.registry`) provides `ResourceKey<Registry<T>>` constants for every Create-managed registry. These keys are used exactly like vanilla and NeoForge registry keys — pass them to `DeferredRegister.create(...)` to start registering your own entries.
+
+## Available registries
+
+The following constants are defined on `CreateRegistries`. Each maps to a specific type that you can implement and register.
+
+### Kinetics & processing
+
+| Constant | Type | Purpose |
+|---|---|---|
+| `CreateRegistries.FAN_PROCESSING_TYPE` | `FanProcessingType` | Custom processing effects applied by industrial fans (e.g., bulk smelting, smoking) |
+| `CreateRegistries.ARM_INTERACTION_POINT_TYPE` | `ArmInteractionPointType` | Custom interaction point types that mechanical arms can target |
+
+### Filters & display
+
+| Constant | Type | Purpose |
+|---|---|---|
+| `CreateRegistries.ITEM_ATTRIBUTE_TYPE` | `ItemAttributeType` | Custom item filter attributes (e.g., "has enchantment", "is damageable") |
+| `CreateRegistries.DISPLAY_SOURCE` | `DisplaySource` | Sources that can write data to linked display targets |
+| `CreateRegistries.DISPLAY_TARGET` | `DisplayTarget` | Targets that can receive and render data from display sources |
+
+### Contraptions & storage
+
+| Constant | Type | Purpose |
+|---|---|---|
+| `CreateRegistries.CONTRAPTION_TYPE` | `ContraptionType` | New contraption assembly strategies (e.g., piston, bearing, elevator) |
+| `CreateRegistries.MOUNTED_ITEM_STORAGE_TYPE` | `MountedItemStorageType<?>` | Custom item inventory types that can be mounted on moving contraptions |
+| `CreateRegistries.MOUNTED_FLUID_STORAGE_TYPE` | `MountedFluidStorageType<?>` | Custom fluid storage types that can be mounted on moving contraptions |
+| `CreateRegistries.PACKAGE_PORT_TARGET_TYPE` | `PackagePortTargetType` | Custom targets for the package port logistics system |
+
+### Potato cannon
+
+| Constant | Type | Purpose |
+|---|---|---|
+| `CreateRegistries.POTATO_PROJECTILE_TYPE` | `PotatoCannonProjectileType` | Custom projectile types for the potato cannon |
+| `CreateRegistries.POTATO_PROJECTILE_RENDER_MODE` | `MapCodec<? extends PotatoProjectileRenderMode>` | Rendering modes for potato cannon projectiles |
+| `CreateRegistries.POTATO_PROJECTILE_ENTITY_HIT_ACTION` | `MapCodec<? extends PotatoProjectileEntityHitAction>` | Actions when a potato projectile hits an entity |
+| `CreateRegistries.POTATO_PROJECTILE_BLOCK_HIT_ACTION` | `MapCodec<? extends PotatoProjectileBlockHitAction>` | Actions when a potato projectile hits a block |
+
+## Registering an entry with DeferredRegister
+
+Use NeoForge's `DeferredRegister` exactly as you would for any vanilla or NeoForge registry, passing the `CreateRegistries` key constant instead of a vanilla key.
+
+```java MyFanProcessingTypes.java
+public class MyFanProcessingTypes {
+    public static final DeferredRegister<FanProcessingType> REGISTER =
+        DeferredRegister.create(CreateRegistries.FAN_PROCESSING_TYPE, "mymod");
+
+    public static final RegistryObject<FanProcessingType> MY_TYPE =
+        REGISTER.register("my_type", () -> new MyFanProcessingType());
+}
+```
+
+Then call `REGISTER.register(modEventBus)` in your mod constructor or `FMLJavaModLoadingContext`.
+
+## SimpleRegistry
+
+For some associations that don't require NeoForge's full registry infrastructure (such as `MovementBehaviour` and `BlockStressValues`), Create uses its own `SimpleRegistry<K, V>` from `com.simibubi.create.api.registry`. This is a lightweight identity-keyed map with support for lazy providers.
+
+```java SimpleRegistry API
+// Create a new instance (Create uses this internally for its built-in associations)
+SimpleRegistry<Block, MyValue> registry = SimpleRegistry.create();
+
+// Register a direct association — direct registrations always take priority over providers
+registry.register(MyBlocks.MY_BLOCK.get(), new MyValue());
+
+// Register a lazy provider — queried in reverse-registration order when no direct entry is found
+registry.registerProvider(object -> {
+    if (object instanceof MyInterface) return new MyValue();
+    return null;  // return null to pass to the next provider
+});
+
+// Query an association (may be null)
+MyValue value = registry.get(someBlock);
+
+// Query via BlockState shortcut
+MyValue value = registry.get(someBlockState);
+```
+
+<Note>
+  `SimpleRegistry.register()` is **thread-safe** and can safely be called during parallel mod initialisation. Provider lookup results are cached; call `registry.invalidate()` if your provider's results can change (e.g., after a tag reload).
+</Note>
+
+### Multi-value variant
+
+`SimpleRegistry.Multi<K, V>` extends `SimpleRegistry` to allow multiple values per key. All providers are always queried and their results accumulated.
+
+```java
+SimpleRegistry.Multi<Block, MyHandler> multi = SimpleRegistry.Multi.create();
+multi.add(MyBlocks.MY_BLOCK.get(), new MyHandler());
+
+List<MyHandler> handlers = multi.get(someBlock); // never null, may be empty
+```
+
+### Tag-based providers
+
+The `SimpleRegistry.Provider` interface includes factory methods for tag-based associations that automatically invalidate when tags reload:
+
+```java
+// Apply the same value to all blocks in a tag
+registry.registerProvider(
+    SimpleRegistry.Provider.forBlockTag(MyTags.MY_BLOCK_TAG, new MyValue())
+);
+```
+
+## CreateBuiltInRegistries
+
+`CreateBuiltInRegistries` (in `com.simibubi.create.api.registry`) provides direct access to the live `Registry<T>` instances, not just the keys. Use this when you need to look up registered entries by `ResourceLocation` at runtime.
+
+```java
+// Look up a registered FanProcessingType by its resource location
+Registry<FanProcessingType> fanTypes = CreateBuiltInRegistries.FAN_PROCESSING_TYPE;
+FanProcessingType type = fanTypes.get(ResourceLocation.fromNamespaceAndPath("create", "haunting"));
+```
+
+<Warning>
+  `CreateBuiltInRegistries` mirrors `CreateRegistries` but does **not** include `POTATO_PROJECTILE_TYPE` as a field — the potato cannon type registry is only accessible via the `CreateRegistries` key. Access it through `BuiltInRegistries.REGISTRY.get(CreateRegistries.POTATO_PROJECTILE_TYPE)` if needed.
+</Warning>

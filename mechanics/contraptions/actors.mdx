@@ -1,0 +1,105 @@
+---
+title: "Contraption Actors: Behaviour While Moving"
+sidebarTitle: "Actors"
+description: "Actors are blocks on a contraption that perform actions at every position they visit — drilling, harvesting, placing, and more. Learn which blocks act and how to configure them."
+---
+
+When a contraption moves through the world, most of its blocks simply ride along passively. But certain blocks — called **actors** (or internally, `MovementBehaviour` implementations) — are active participants: they perform a specific action at every world position the contraption passes through. A Mechanical Drill breaks the block at each new position. A Mechanical Harvester strips mature crops. A Deployer simulates a player interaction at every grid square the contraption visits.
+
+Actors are what transform a moving structure from a simple door or elevator into an autonomous mining machine, a crop-harvesting combine, or an automated placement robot. Understanding which blocks act and when to enable or disable them gives you fine-grained control over what your contraptions do in the world.
+
+<Info>
+  Actor behaviour is registered through the `MovementBehaviour.REGISTRY`. Addon mods can register custom actors for their own blocks — see the `MovementBehaviour` API interface for the full contract.
+</Info>
+
+---
+
+## Built-in Actors
+
+### Mechanical Drill
+
+The Mechanical Drill mines the block occupying each world position the contraption moves into. This is the primary tool for automated mining rigs. The drill checks the block directly in front of it (relative to the contraption's direction of travel) and breaks it, collecting the drops.
+
+Active drills also deal **4 damage** per contact to entities (`crushingDamage` config, default 4), so clear the path of friendly mobs before running.
+
+---
+
+### Mechanical Saw
+
+The Mechanical Saw cuts through blocks in its path, specifically those it has a valid saw recipe for — stone, wood, and related materials. When mounted on a moving contraption, it acts like the drill but applies the saw's recipe outputs instead of standard block drops. It is also capable of felling connected tree trunks in one sweep.
+
+---
+
+### Mechanical Harvester
+
+The Harvester sweeps over crop blocks as the contraption passes and collects their drops. Its behaviour is governed by two config flags:
+
+- `harvesterReplants = true` — after collecting drops from a fully mature crop, the harvester automatically replants a seed from the collected output, leaving the farmland ready for the next cycle.
+- `harvestPartiallyGrown = false` — crops that have not yet reached full maturity are left in place; only fully grown plants are harvested.
+
+<Tip>
+  Mount multiple Harvester blocks side by side on a wide piston or gantry carriage to cover an entire field in a single pass. Pair with a Vault on the same contraption to hold the harvest.
+</Tip>
+
+---
+
+### Mechanical Plough
+
+As the contraption moves, the Plough converts dirt and grass blocks beneath it into farmland. It also breaks fragile surface decorations — snow layers, short grass, young crops — that are in its way. Combine the Plough with the Harvester on the same contraption for a complete till-and-harvest operation, or with a Deployer holding seeds for a plant-on-pass rig.
+
+---
+
+### Deployer
+
+The Deployer is the most versatile actor. At every world position the contraption visits, it extends and fires its interaction at the target block using whatever item is loaded into its inventory slot.
+
+- **Right-click mode** (default): activates blocks, places blocks/items on surfaces, applies bonemeal, fills containers, and triggers any right-click interaction.
+- **Left-click mode**: breaks blocks and attacks entities as if a player swung a tool.
+
+Enchantments on the held item apply. A Fortune-enchanted pickaxe in left-click mode will yield bonus ore drops; an Efficiency-enchanted shovel will clear terrain faster.
+
+<Note>
+  The Deployer uses a fake player internally. Some mods or vanilla behaviours check for a real player, so interactions that require a human presence may not fire correctly. Test your setup before relying on it for critical automation.
+</Note>
+
+---
+
+### Portable Storage Interface
+
+The Portable Storage Interface (PSI) acts as a docking connector between the contraption's internal storage and external inventories in the world. As an actor, when the contraption moves into a position where a matching PSI on a stationary block is facing it, items transfer automatically between the two.
+
+This is the primary mechanism for automated loading and unloading stations. See [Storage on Contraptions](/mechanics/contraptions/storage) for the full setup guide.
+
+---
+
+### Mechanical Roller
+
+The Roller fills terrain as the contraption passes over it, placing blocks from its internal supply into the surface layer beneath the contraption's path. This enables automated road-laying, track-paving, and terrain-flattening rigs.
+
+The maximum depth the roller will fill downward is `rollerFillDepth = 12` blocks (`rollerFillDepth` config). The roller draws blocks from any mounted storage on the contraption.
+
+---
+
+### Fluid Nozzle
+
+The Fluid Nozzle sprays fluid from a tank mounted on the contraption at its current position. This enables contraptions that lay water or lava trails, extinguish fires along a path, or irrigate terrain as they travel.
+
+---
+
+## Disabling Actors
+
+Sometimes you want a contraption to move without its actors firing — for example, returning a mining arm to its start position without drilling additional blocks on the way back.
+
+**Wrench.** Right-click any actor block on a stationary contraption with a Wrench to toggle that individual actor off. A disabled actor still travels with the contraption but does not perform its action.
+
+**Contraption Controls (Redstone).** A Contraption Controls block (also called a Redstone Contraption Controller or lectern-style controller) mounted on the contraption can receive a redstone signal and disable all actors simultaneously. Wire it to a Redstone Contact or a Signal Activator at a fixed position in the world to automatically disable actors during the return stroke.
+
+---
+
+## Item Collection
+
+When an actor produces item drops (the drill mines a block, the harvester strips a crop), those items are first offered to any inventory storage mounted on the same contraption. If `moveItemsToStorage` is `true` (the default), items fill any available Chest, Barrel, or Vault on the contraption automatically. Only items that cannot fit into mounted storage are dropped into the world.
+
+<Note>
+  Set `moveItemsToStorage = false` in the server config if you prefer that harvested items always drop as world entities, for example when using a separate item vacuum system below the contraption.
+</Note>

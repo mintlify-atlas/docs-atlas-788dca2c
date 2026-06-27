@@ -1,0 +1,105 @@
+---
+title: "Stress System: Balancing Power and Load in Create"
+sidebarTitle: "Stress System"
+description: "Every kinetic network has a stress capacity and stress impact. Exceed capacity and everything stops. Learn how to balance generators and consumers."
+---
+
+Every kinetic network in Create is governed by two competing numbers: **stress capacity** (the total power available from generators) and **stress impact** (the total load from all running machines). As long as capacity exceeds impact, everything runs smoothly. The moment impact surpasses capacity, the entire network becomes **overstressed** — every machine on it grinds to a halt, regardless of whether the overloading machine is the most important one. Managing stress is the central challenge of scaling up a Create factory.
+
+## Stress Units (SU)
+
+Stress is measured in **Stress Units (SU)**. The key insight is that both capacity and impact **scale linearly with RPM** — they are not fixed values:
+
+- A generator's **capacity** at a given speed = `base_capacity × (current_RPM / 1 RPM)`.
+- A consumer's **impact** at a given speed = `base_impact × (current_RPM / 1 RPM)`.
+
+This means running your network faster simultaneously increases how much power is available *and* how much every machine costs. The ratio between capacity and impact stays the same as you speed up, but the absolute gap widens — which matters when adding new machines.
+
+The `stats` section of the kinetics config defines reference thresholds used for in-game indicators (the coloured tiers shown in tooltips and Goggles overlays):
+
+| Config Key | Default | Unit | Meaning |
+|---|---|---|---|
+| `mediumStressImpact` | 4 | SU | Impact classified as "medium" |
+| `highStressImpact` | 8 | SU | Impact classified as "high" |
+| `mediumCapacity` | 256 | SU | Capacity classified as "medium" |
+| `highCapacity` | 1024 | SU | Capacity classified as "high" |
+
+These thresholds are evaluated **at 1 RPM** (the base). At 32 RPM, a component with a base impact of 4 SU draws 128 SU from the network.
+
+<Info>
+  Impact and capacity values shown in the `BlockStressValues` registry are base values at 1 RPM. The actual SU consumed or produced at runtime is always `base × current_RPM`. This is why slowing down a network is such an effective way to reduce load.
+</Info>
+
+## Reading the Network
+
+Create provides two in-game tools for monitoring stress without opening any config file or spreadsheet.
+
+<CardGroup cols={2}>
+  <Card title="Engineer's Goggles" icon="glasses">
+    Craft and wear these as a helmet. When you look at any kinetic block, an overlay appears showing its current stress impact or capacity in SU, the current network speed in RPM, and whether the network is overstressed. Essential for diagnosing problems on the fly.
+  </Card>
+  <Card title="Stress Gauge / Stressometer" icon="gauge">
+    A dedicated block that displays the total capacity and total impact of the network it is connected to, as well as the percentage utilisation. Place one on any shaft in a network for a permanent readout. Found in `content/kinetics/gauge`.
+  </Card>
+</CardGroup>
+
+## Common Generators and Their Capacity
+
+Not all generators are equal. Here is a rough overview of what to expect at each tier of progression.
+
+<CardGroup cols={3}>
+  <Card title="Water Wheel" icon="droplet">
+    **Tier: Low.** Passive generation, no fuel. Produces a fixed base capacity regardless of external RPM (the wheel sets its own speed based on water flow). Great for early game. Stack multiple wheels for more capacity.
+  </Card>
+  <Card title="Windmill Bearing" icon="wind">
+    **Tier: Low–Medium.** Scales with the number of attached sail blocks. Every `windmillSailsPerRPM` sails (default: **8**) adds 1 RPM. A windmill with 64 sails produces 8 RPM. More sails = more RPM = more capacity. Requires open sky and no obstructions in the rotation path.
+  </Card>
+  <Card title="Steam Engine" icon="flame">
+    **Tier: High.** Pairs with a Flywheel and a Blaze Burner–powered boiler. Multiple Steam Engines can be mounted on one flywheel stack for very large capacity values. Requires a continuous fuel supply but provides the best capacity-to-footprint ratio.
+  </Card>
+</CardGroup>
+
+## Tips for Balancing Stress
+
+Getting overstressed is not a disaster — it is a signal to rebalance. Here are the most effective strategies.
+
+<Steps>
+  <Step title="Add more generators">
+    The straightforward fix: build another Water Wheel, extend your windmill's sail count, or add a second Steam Engine to your flywheel. Every additional generator on the same network increases total capacity at the same RPM.
+  </Step>
+  <Step title="Lower the RPM of expensive consumers">
+    Because stress impact scales with RPM, a machine running at 16 RPM costs half as much as the same machine at 32 RPM. Use a **Rotation Speed Controller** or a large-to-small cogwheel pair to reduce the speed of your most impact-heavy devices. Processing will be slower, but the network will stay healthy.
+  </Step>
+  <Step title="Segment your networks">
+    Kinetic networks only share stress within a directly connected group of shafts and gears. Two physically separate networks are completely independent — overstressing one has zero effect on the other. Split your factory into discrete networks (e.g., one network per production line) so that a single overloaded line doesn't halt everything else.
+  </Step>
+  <Step title="Disable stress entirely (server option)">
+    For creative or modpack contexts where you don't want to manage power, the `disableStress` config flag (default: `false`) removes all stress calculations. Every machine runs regardless of capacity.
+  </Step>
+</Steps>
+
+<Warning>
+  When a network is overstressed, **every machine on that network stops** — not just the one that pushed it over capacity. A single newly placed Mechanical Saw can silence an entire production floor if the network was already near its limit. Always check your Stressometer before adding new machines to a busy network.
+</Warning>
+
+## Config Reference
+
+All values below come from `CKinetics.java` and can be adjusted in the mod's `kinetics` config file.
+
+| Config Key | Default | Unit | Description |
+|---|---|---|---|
+| `disableStress` | `false` | — | Disables the stress mechanic entirely |
+| `maxRotationSpeed` | `256` | RPM | Maximum speed any kinetic block can reach |
+| `mediumSpeed` | `30` | RPM | Threshold for "medium" speed classification |
+| `fastSpeed` | `100` | RPM | Threshold for "fast" speed classification |
+| `mediumStressImpact` | `4` | SU | Threshold for "medium" impact classification |
+| `highStressImpact` | `8` | SU | Threshold for "high" impact classification |
+| `mediumCapacity` | `256` | SU | Threshold for "medium" capacity classification |
+| `highCapacity` | `1024` | SU | Threshold for "high" capacity classification |
+| `windmillSailsPerRPM` | `8` | sails | Sails required per 1 RPM of windmill speed |
+| `minimumWindmillSails` | `8` | sails | Minimum sails needed to assemble a windmill |
+
+## Further Reading
+
+- [Rotational Force](/concepts/rotational-force) — understand RPM, generators, and transmission before worrying about stress.
+- [Kinetic Generators](/mechanics/kinetics/generators) — detailed stats and placement guides for every power source in Create.

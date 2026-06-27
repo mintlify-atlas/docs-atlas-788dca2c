@@ -1,0 +1,95 @@
+---
+title: "Packaging System: Automated Item Distribution"
+sidebarTitle: "Packaging System"
+description: "Create's Packager and Package Port automate item bundling and distribution. Link stock keepers to packagers to maintain automatic inventory levels across your base."
+---
+
+Create's packaging system provides a postal-style logistics layer that sits on top of the belt-and-funnel transport network. Items are bundled into **packages**, addressed to specific **Package Ports**, and delivered automatically — either in response to stock requests or triggered by redstone. This makes it practical to maintain inventory levels across a large base, supply crafting stations on demand, or dispatch specific items to specific machines without manually routing every belt.
+
+<Info>
+  The packaging system is a newer addition to Create, introduced in the 6.x release series. Some features, including Recipe Viewer integration and the Repackager sub-block, were added or refined in subsequent 6.x patch releases.
+</Info>
+
+## Core Blocks
+
+<CardGroup cols={2}>
+  <Card title="Packager" icon="box">
+    The central dispatcher. Accepts items from an adjacent inventory (via funnel/belt) or from direct input, bundles them into packages, and sends those packages to registered destination ports. Can be linked to a Stock Keeper for fully automatic replenishment, or triggered manually.
+  </Card>
+  <Card title="Package Port" icon="mailbox">
+    A receiving station registered to a specific address or channel. When a package addressed to this port arrives, the port unpacks the contents into an adjacent inventory. Package Ports are registered via the `PackagePortTargetType` registry, allowing addons to define custom transport mechanisms (e.g., chain conveyors, train stations).
+  </Card>
+  <Card title="Packager Link" icon="wifi">
+    A wireless bridge between a Packager and one or more remote Package Ports. Place a Packager Link adjacent to a Packager and configure its channel. Package Ports on the same channel anywhere in the world (or dimension, depending on configuration) receive packages from that Packager without needing a physical belt connection.
+  </Card>
+  <Card title="Redstone Requester" icon="redstone">
+    Triggers a package request via a rising redstone edge. Place it adjacent to a Packager and configure which items and quantities to request. Useful for integrating the packaging system with comparators, observers, and other redstone circuits.
+  </Card>
+</CardGroup>
+
+### Built-in Package Port Target Types
+
+Create registers two `PackagePortTargetType` entries out of the box:
+
+- **`create:chain_conveyor`** — delivers packages via chain conveyor belts to a Frogport destination.
+- **`create:train_station`** — dispatches packages via train to a registered station Frogport.
+
+Addon developers can register additional target types in `CreateRegistries.PACKAGE_PORT_TARGET_TYPE`.
+
+## Setting Up a Distribution Network
+
+<Steps>
+  <Step title="Place and supply the Packager">
+    Set the Packager down and connect your item storage to it — a Funnel pointing into the Packager's input face is the simplest approach. The Packager will pull items from whatever inventory the Funnel is extracting from.
+  </Step>
+  <Step title="Place Package Ports at each destination">
+    At every location where items should be delivered, place a Package Port adjacent to the destination inventory (chest, vault, basin, etc.). The port will unpack received packages into that inventory.
+  </Step>
+  <Step title="Configure addresses">
+    Open each Package Port's interface and assign it an address or channel. Each port needs a unique address if you want to route different items to different destinations.
+  </Step>
+  <Step title="Link the Packager to its ports">
+    Return to the Packager and configure which addresses it should dispatch to, along with what items each address should receive. Use a Packager Link block if the ports are far away or in a different area.
+  </Step>
+  <Step title="Trigger delivery">
+    Items are bundled and dispatched automatically when a request is received — either from a Stock Keeper detecting low stock, from a Redstone Requester receiving a pulse, or from manual interaction with the Packager's interface.
+  </Step>
+</Steps>
+
+## Stock Keeper Integration
+
+The **Stock Ticker** (Stock Keeper) is the intelligence layer of the packaging system. Place it adjacent to an inventory, configure target stock levels for each item type you want to maintain, and it continuously monitors actual stock against those targets.
+
+<Steps>
+  <Step title="Place the Stock Keeper">
+    Put it directly next to a storage block (chest, vault, crate) that it should monitor. It reads the inventory contents through the adjacent face.
+  </Step>
+  <Step title="Set stock targets">
+    Open the Stock Keeper's interface. For each item type you want to maintain, specify the desired quantity. The keeper will request a top-up any time the actual count falls below this target.
+  </Step>
+  <Step title="Link to a Packager">
+    The Stock Keeper must be associated with one or more Packagers (directly adjacent or via Packager Link) that can fulfil requests. When stock runs low, the keeper automatically sends a packaging request to the linked Packager.
+  </Step>
+  <Step title="Use Recipe Viewer integration (optional)">
+    If you have JEI or REI installed, the Stock Keeper's Recipe Viewer sync feature lets you pull a recipe's ingredient list directly into the keeper's stock tracking configuration. Choose **From Viewer** sync mode, then look up a recipe — the ingredient quantities populate automatically.
+  </Step>
+</Steps>
+
+<Tip>
+  Combine the Stock Keeper with filters for smart routing: configure each Package Port with a filter so that only specific items are accepted at each destination. This prevents a Packager from flooding a specialised station with items it doesn't need.
+</Tip>
+
+## Unpacking
+
+Package Ports unpack received packages into adjacent inventories using registered **UnpackingHandlers**. Create registers three handlers by default:
+
+| Block | Handler behaviour |
+|---|---|
+| Standard inventories (chests, vaults) | Items are inserted normally via item handler capability |
+| **Basin** | Uses `BasinUnpackingHandler` — items are deposited into the basin for processing |
+| **Mechanical Crafter** | Uses `CrafterUnpackingHandler` — items are distributed across crafter input slots |
+| **Creative Crate** | Uses `VoidingUnpackingHandler` — received items are voided (useful for testing) |
+
+Addon developers can register custom `UnpackingHandler` instances via `UnpackingHandler.REGISTRY.register(block, handler)` to define bespoke delivery behaviour for their own blocks.
+
+For information on filtering which items flow through the packaging system and its associated logistics blocks, see [Filtering Items](/mechanics/logistics/filtering).

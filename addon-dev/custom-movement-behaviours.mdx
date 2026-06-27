@@ -1,0 +1,195 @@
+---
+title: "Custom Movement Behaviours: Block Actions on Contraptions"
+sidebarTitle: "Movement Behaviours"
+description: "Register a MovementBehaviour to give a block custom actions when it rides a Create contraption. Implement tick, startMoving, visitNewPosition, and rendering hooks."
+---
+
+A `MovementBehaviour` (also called an Actor) defines what a block does while it is mounted on a moving contraption — a piston arm, a bearing platform, an elevator, and so on. When the contraption assembles, Create looks up each block's registered behaviour and calls its lifecycle methods every tick and whenever the contraption enters a new block position. Register a behaviour via `MovementBehaviour.REGISTRY`.
+
+## The MovementBehaviour interface
+
+`com.simibubi.create.api.behaviour.movement.MovementBehaviour`
+
+Every method has a sensible default so you only need to override what you actually use. All methods receive a `MovementContext` that describes the current state of the actor.
+
+### Core lifecycle methods
+
+```java
+public interface MovementBehaviour {
+
+    // Return false to suppress ALL actions for this actor.
+    // Default: !context.disabled
+    default boolean isActive(MovementContext context);
+
+    // Called every game tick while the contraption is active.
+    default void tick(MovementContext context);
+
+    // Called once when the contraption starts moving.
+    default void startMoving(MovementContext context);
+
+    // Called once when the contraption stops moving.
+    default void stopMoving(MovementContext context);
+
+    // Called each time the contraption enters a new block position in the world.
+    // Use this for blocks that interact with the world as they sweep through it.
+    default void visitNewPosition(MovementContext context, BlockPos pos);
+
+    // Called when the contraption's speed changes.
+    default void onSpeedChanged(MovementContext context, Vec3 oldMotion, Vec3 motion);
+}
+```
+
+### Stalling & disabling
+
+```java
+    // Return an ItemStack to allow a player to disable this actor by right-clicking with it.
+    // Default: returns an ItemStack of context.state.getBlock()
+    @Nullable
+    default ItemStack canBeDisabledVia(MovementContext context);
+
+    // Called when the actor is disabled via canBeDisabledVia.
+    // Default: calls cancelStall(context)
+    default void onDisabledByControls(MovementContext context);
+
+    // If true, tick() is called even when the actor is disabled.
+    // Default: false
+    default boolean mustTickWhileDisabled();
+
+    // Clear the stall flag on the context.
+    default void cancelStall(MovementContext context);
+```
+
+### Positioning
+
+```java
+    // World-space offset of this actor's working area relative to the contraption's block position.
+    // Used by other systems to determine proximity. Default: Vec3.ZERO
+    default Vec3 getActiveAreaOffset(MovementContext context);
+```
+
+### Extra data
+
+```java
+    // Write any extra data to MovementContext.data that should persist across ticks.
+    default void writeExtraData(MovementContext context);
+```
+
+### Item collection
+
+```java
+    // Attempt to insert the stack into the contraption's storage; drop any remainder as an ItemEntity.
+    // Use this instead of spawning item entities directly.
+    default void collectOrDropItem(MovementContext context, ItemStack stack);
+```
+
+<Warning>
+  `dropItem(MovementContext, ItemStack)` was renamed to `collectOrDropItem` in Create **6.0.9** and is scheduled for removal. Update any existing code to use `collectOrDropItem` instead.
+</Warning>
+
+### Rendering
+
+```java
+    // Return true to suppress the normal block entity renderer while in motion.
+    default boolean disableBlockEntityRendering();
+
+    // Client-only: render the block's appearance manually inside the contraption renderer.
+    @OnlyIn(Dist.CLIENT)
+    default void renderInContraption(MovementContext context, VirtualRenderWorld renderWorld,
+        ContraptionMatrices matrices, MultiBufferSource buffer);
+
+    // Client-only: create a Flywheel ActorVisual for GPU-instanced rendering.
+    @OnlyIn(Dist.CLIENT)
+    @Nullable
+    default ActorVisual createVisual(VisualizationContext visualizationContext,
+        VirtualRenderWorld simulationWorld, MovementContext movementContext);
+```
+
+---
+
+## Registering a behaviour
+
+Associate your `MovementBehaviour` with a block through `MovementBehaviour.REGISTRY`, which is a `SimpleRegistry<Block, MovementBehaviour>`.
+
+```java MyMod.java
+// During mod initialisation:
+MovementBehaviour.REGISTRY.register(MyBlocks.MY_BLOCK.get(), new MyMovementBehaviour());
+```
+
+If you use **Registrate**, there is a built-in helper that integrates directly with the block builder:
+
+```java MyBlocks.java (Registrate)
+public static final BlockEntry<MyBlock> MY_BLOCK = REGISTRATE
+    .block("my_block", MyBlock::new)
+    // ... other builder calls ...
+    .onRegister(MovementBehaviour.movementBehaviour(new MyMovementBehaviour()))
+    .register();
+```
+
+<Note>
+  `REGISTRY.register()` is thread-safe and may be called during parallel mod initialisation. You do **not** need to defer it to a specific event phase.
+</Note>
+
+---
+
+## MovementContext reference
+
+`com.simibubi.create.content.contraptions.behaviour.MovementContext`
+
+The context object passed to every lifecycle method exposes the full state of the moving block:
+
+| Field / Method | Type | Description |
+|---|---|---|
+| `world` | `Level` | The server-side level the contraption is moving through |
+| `state` | `BlockState` | The block state of this actor |
+| `localPos` | `BlockPos` | The block's position *within* the contraption structure |
+| `position` | `Vec3` | Current world-space position (may be `null` before first tick) |
+| `motion` | `Vec3` | Current world-space velocity of the contraption |
+| `relativeMotion` | `Vec3` | Motion relative to the contraption's own orientation |
+| `rotation` | `UnaryOperator<Vec3>` | Function to transform a vector by the contraption's current rotation |
+| `blockEntityData` | `CompoundTag` | Saved NBT from the block entity at assembly time |
+| `data` | `CompoundTag` | Persistent scratch space for actor-specific data (survives ticks) |
+| `contraption` | `Contraption` | The contraption this actor belongs to |
+| `stall` | `boolean` | Set to `true` to halt the contraption |
+| `disabled` | `boolean` | `true` if the actor has been disabled via `canBeDisabledVia` |
+| `firstMovement` | `boolean` | `true` on the very first tick after assembly |
+| `temporaryData` | `Object` | Untyped scratch space; not persisted |
+| `getItemStorage()` | `MountedItemStorage` | The item inventory mounted at this actor's position (may be `null`) |
+| `getFluidStorage()` | `MountedFluidStorage` | The fluid storage mounted at this actor's position (may be `null`) |
+| `getFilterFromBE()` | `FilterItemStack` | Reads the filter item from `blockEntityData`, if present |
+| `getAnimationSpeed()` | `float` | Convenience value for driving animation based on current speed |
+
+---
+
+## Example: a simple harvesting behaviour
+
+```java
+public class MyHarvesterBehaviour implements MovementBehaviour {
+
+    @Override
+    public void visitNewPosition(MovementContext context, BlockPos pos) {
+        if (context.world.isClientSide) return;
+
+        BlockState state = context.world.getBlockState(pos);
+        if (isCrop(state) && isFullyGrown(state)) {
+            // Harvest the crop and collect drops
+            List<ItemStack> drops = Block.getDrops(state, (ServerLevel) context.world, pos, null);
+            context.world.setBlock(pos, resetCrop(state), Block.UPDATE_ALL);
+            for (ItemStack drop : drops) {
+                collectOrDropItem(context, drop);
+            }
+        }
+    }
+}
+```
+
+<Tip>
+  Use `visitNewPosition` for blocks that should interact with the world as the contraption sweeps through it — harvesters, drills, and shovels all work this way. Use `tick` for continuous effects that don't depend on the contraption having moved to a new cell.
+</Tip>
+
+---
+
+## Client-side rendering
+
+The `renderInContraption` and `createVisual` methods are called on the **client only** (annotated `@OnlyIn(Dist.CLIENT)`). Use them when the block requires custom rendering that differs from its normal static appearance — for example, an animated harvester blade.
+
+`createVisual` returns a Flywheel `ActorVisual`, which enables GPU-instanced rendering. If you return `null` (the default), Create falls back to `renderInContraption`. If both are unused and `disableBlockEntityRendering()` returns `false`, the block entity's normal renderer is used.

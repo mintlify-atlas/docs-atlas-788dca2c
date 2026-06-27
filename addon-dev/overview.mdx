@@ -1,0 +1,81 @@
+---
+title: "Addon Development for Create: Getting Started"
+sidebarTitle: "Overview"
+description: "Build addons for the Create mod using NeoForge's event system and Create's Java API. Learn how to depend on Create, access its registries, and extend its core systems."
+---
+
+Create exposes a stable Java API under the `com.simibubi.create.api` package that addon mods can use to extend its systems — movement behaviours, fan processing, contraption storage, stress values, recipes, and more. The API is designed to be consumed by third-party mods targeting NeoForge and covers nearly every point where Create's behaviour can be customised or augmented.
+
+## Adding Create as a dependency
+
+Add Create to your `build.gradle` dependencies block. Always use the variant that matches your target Minecraft and NeoForge versions. The `slim` classifier excludes runtime assets you don't need at compile time.
+
+```groovy build.gradle
+dependencies {
+    // Create for NeoForge — use the version matching your target Minecraft/NeoForge
+    implementation fg.deobf("com.simibubi.create:create-1.21.1:6.0.11:slim") { transitive = false }
+    // Or via maven (createmod.net maven)
+    // maven { url 'https://maven.createmod.net' }
+}
+```
+
+<Note>
+  The current stable release is **6.0.11** targeting Minecraft **1.21.1** with NeoForge **21.1.219**. Check [maven.createmod.net](https://maven.createmod.net) for the latest versions.
+</Note>
+
+## API package structure
+
+All public API lives under `com.simibubi.create.api`. The package is divided into focused sub-packages:
+
+| Package | Purpose |
+|---|---|
+| `api/behaviour/` | Display sources/targets, movement behaviour, spouting behaviour |
+| `api/boiler/` | Boiler heater registration |
+| `api/connectivity/` | `ConnectivityHandler` for multi-block fluid/tank groups |
+| `api/contraption/` | `BlockMovementChecks`, `ContraptionType`, mounted storage types |
+| `api/data/` | Recipe providers and data map helpers |
+| `api/effect/` | Open pipe effect handlers |
+| `api/equipment/` | Goggle overlays, potato cannon projectile types |
+| `api/event/` | NeoForge events fired by Create |
+| `api/registry/` | `CreateRegistries`, `CreateBuiltInRegistries`, `SimpleRegistry` |
+| `api/schematic/` | Schematic requirement registries, NBT safety checks |
+| `api/stress/` | `BlockStressValues` for stress capacity and consumption |
+
+## Stability policy
+
+<Info>
+  Classes inside `com.simibubi.create.api` are considered **public API**. Create follows semantic versioning for these classes — breaking changes will be communicated in advance and are avoided between minor releases.
+</Info>
+
+<Warning>
+  Classes inside `com.simibubi.create.impl` and `com.simibubi.create.infrastructure` are **internal implementation details**. They may change or be removed without notice between any release. Do not depend on them in your addon.
+</Warning>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Registries" icon="layer-group" href="/addon-dev/registries">
+    Use NeoForge's `DeferredRegister` with Create's `ResourceKey` constants to register fan processing types, arm interaction points, display link handlers, and more.
+  </Card>
+  <Card title="Events" icon="bolt" href="/addon-dev/events">
+    Subscribe to NeoForge events fired by Create — attach block entity behaviours, intercept fluid pipe collisions, and respond to train graph merges.
+  </Card>
+  <Card title="Custom Movement Behaviours" icon="person-running" href="/addon-dev/custom-movement-behaviours">
+    Give any block custom actions while it rides a Create contraption by implementing and registering a `MovementBehaviour`.
+  </Card>
+  <Card title="Block Movement Checks" icon="shield-check" href="/addon-dev/block-movement-checks">
+    Control whether blocks can be picked up, moved within, or attached to contraptions during assembly.
+  </Card>
+  <Card title="Fan Processing Types" icon="fan" href="/addon-dev/fan-processing-types">
+    Register custom in-world processing effects that industrial fans apply to items and entities.
+  </Card>
+  <Card title="Contraption Storage" icon="box-archive" href="/addon-dev/contraption-storage">
+    Define how item and fluid inventories are mounted onto and synced with moving contraptions.
+  </Card>
+  <Card title="Stress Values" icon="gauge-high" href="/addon-dev/stress-values">
+    Register stress capacity and consumption values for custom kinetic blocks.
+  </Card>
+  <Card title="Custom Recipes" icon="flask" href="/addon-dev/custom-recipes">
+    Add new recipe types compatible with Create's processing pipeline and JEI/REI integration.
+  </Card>
+</CardGroup>

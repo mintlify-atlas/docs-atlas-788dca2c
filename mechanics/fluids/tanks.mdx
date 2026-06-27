@@ -1,0 +1,91 @@
+---
+title: "Fluid Tanks: Storing and Connecting Fluid in Create"
+sidebarTitle: "Tanks"
+description: "Create's fluid tanks merge into multi-block structures for large-scale storage. Learn tank connectivity, capacity, and how to read fluid levels with gauges."
+---
+
+Create's **Fluid Tank** is a single-block storage unit that automatically merges with adjacent tanks to form a larger, shared reservoir. A lone tank holds a modest amount of fluid; a cluster of tanks arranged in a rectangular prism shares one unified pool with a capacity equal to the sum of all its parts. This makes Fluid Tanks equally useful as a compact buffer or as the centrepiece of an industrial fluid storage array.
+
+## Building a Tank
+
+Constructing a multi-block tank requires no special ritual — just place tanks next to each other. Create's `ConnectivityHandler` scans for adjacent tanks of the same type on placement and automatically groups them into a single multi-block structure.
+
+**Size limits (defaults, all configurable):**
+
+| Parameter | Default | Config key |
+|---|---|---|
+| Capacity per tank block | 8 buckets (8,000 mB) | `fluidTankCapacity` |
+| Maximum height | 32 blocks | `fluidTankMaxHeight` |
+| Maximum width/depth | 3 blocks | Hard-coded (`MAX_SIZE = 3`) |
+
+<Note>
+  Tanks form a rectangular prism, not an arbitrary shape. The entire footprint must be consistent — for example, a 2×2 base can stack as tall as `fluidTankMaxHeight`, but you cannot mix a 1×1 column with a 2×2 base in the same multi-block. If the shape is invalid, tanks simply remain independent single-block units.
+</Note>
+
+A 3×3×32 tank (the largest possible with default config) stores **9 × 32 × 8 = 2,304 buckets** (2,304,000 mB) of fluid.
+
+## Tank Connectivity
+
+Connectivity is managed entirely by `ConnectivityHandler.formMulti()`. When any tank block is placed or removed, the handler re-evaluates the entire neighbourhood:
+
+1. It searches outward from the changed block, collecting all tank blocks of the same type.
+2. It identifies the best rectangular prism that can be formed from the connected group.
+3. It assigns a **controller** (the bottom-left-front block) that owns the shared fluid inventory.
+4. All non-controller tanks delegate fluid queries to the controller.
+
+When a multi-block tank is broken apart, the stored fluid is split proportionally across the remaining individual tanks so nothing is lost.
+
+<Tip>
+  Tanks on a **Contraption** (carried by a Mechanical Bearing, Piston, or similar) retain their fluid while moving and re-merge automatically when the contraption is disassembled back into the world.
+</Tip>
+
+## Viewing Contents
+
+Three methods let you inspect what's inside a tank without interacting with it:
+
+<CardGroup cols={3}>
+  <Card title="Window panes" icon="window">
+    Tanks default to a **window** variant that shows the fluid level visually through glass panes on the side faces. Toggle windows on or off by right-clicking the tank with an empty hand (not available while the boiler mode is active).
+  </Card>
+  <Card title="Fluid Level Gauge" icon="gauge">
+    Place a **Fluid Level Gauge** block against any face of a tank to get a numeric readout of the current fill level. The gauge displays percentage fill and can output a proportional comparator signal.
+  </Card>
+  <Card title="Goggles overlay" icon="glasses">
+    Wearing **Engineer's Goggles** and looking at a tank shows an exact tooltip with the fluid name and current volume in mB, along with total capacity.
+  </Card>
+</CardGroup>
+
+## Boiler Tanks
+
+When a **Blaze Burner** is placed beneath a Fluid Tank (or a stack of them), the tank can be converted into a **Steam Boiler**. The Blaze Burner heats the water inside the tank to produce steam, which drives **Steam Engines** connected to the boiler's sides.
+
+<Steps>
+  <Step title="Place the Blaze Burner">
+    Put a Blaze Burner (fuelled with a Blaze Rod, or a Blaze Cake for sustained burning) directly beneath the bottom tank block.
+  </Step>
+  <Step title="Fill with water">
+    Pump water into the tank via a pipe network. The boiler requires water to produce steam.
+  </Step>
+  <Step title="Attach Steam Engines">
+    Place Steam Engine blocks against the sides of the tank. Each engine draws steam and outputs rotational force.
+  </Step>
+  <Step title="Scale up">
+    A larger tank (more blocks) combined with hotter fuel produces more steam per tick and therefore higher RPM output from attached engines.
+  </Step>
+</Steps>
+
+<Info>
+  What items the Blaze Burner will accept as fuel is determined by the **BlazeBurnerFuel** data map. This map is datapacked, meaning modpack authors and addon developers can add new fuel sources without replacing the base mod's fuel list. Different fuels provide different heat levels, which in turn determine steam output rate.
+</Info>
+
+<Warning>
+  While a tank is operating as a boiler, the window toggle is disabled — the tank's glass panes are removed and replaced with an opaque casing. Deactivating the boiler (removing the Blaze Burner) restores the window toggle.
+</Warning>
+
+## Smart Fluid Pipe Integration
+
+A **Smart Fluid Pipe** placed adjacent to a tank acts as a filtered inlet or outlet. Configure the pipe's filter slot with a specific fluid type; only that fluid is permitted to flow through the pipe in either direction. This prevents accidentally mixing fluids when multiple tanks sharing a pipe junction contain different liquids.
+
+<Note>
+  In version 6.0.10, an edge-case bug was fixed where tanks would fail to notify neighbouring blocks of a fluid change under certain conditions (#8535). If you are running an older version and notice Comparators or Gauges not updating correctly, updating to 6.0.10 or later resolves the issue.
+</Note>

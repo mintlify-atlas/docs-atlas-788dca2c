@@ -1,0 +1,136 @@
+---
+title: "Get Started with Create: Your First Machine"
+sidebarTitle: "First Steps"
+description: "Build your first Create machine from scratch. Craft a Hand Crank, connect shafts, and power a Mechanical Press through Create's rotational force system."
+---
+
+This guide walks you through building a small but fully functional Create machine from scratch — no prior experience with the mod required. By the end you will have a working **Hand Crank → Shaft → Mechanical Press** chain that can compress items, and you will understand the two ideas that underpin every Create machine: **rotation** and **stress**. Everything here uses materials available in the first day of a new survival world.
+
+## Gathering materials
+
+You need a handful of vanilla and Create materials before you can craft anything. The most important Create-specific ingredient is **Andesite Alloy** — a simple early-game composite that appears in almost every starter recipe.
+
+Collect the following from normal survival play:
+
+| Material | Amount | Source |
+|----------|--------|--------|
+| Andesite | 4+ | Found in underground stone layers (y 0–60) |
+| Iron Nuggets | 4+ | Smelt iron ingots, then craft into nuggets (1 ingot → 9 nuggets) |
+| Iron Ingots | 4 | Smelted from iron ore |
+| Oak Planks (or any wood) | 8 | Crafted from logs |
+| Smooth Stone | 4 | Smelt cobblestone → stone → smooth stone |
+
+<Note>
+  Andesite spawns in large blobs between y 0 and y 60 in most biomes. If you are playing on a superflat or custom world, look in the **Stones** section of a stone layer or trade with a Mason villager.
+</Note>
+
+## Your first rotational source
+
+Every Create machine needs rotation to operate. The simplest source is the **Hand Crank** — a manually operated shaft that you spin yourself. It produces a small, steady rotation as long as you keep right-clicking it.
+
+<Steps>
+  <Step title="Craft Andesite Alloy">
+    Open your crafting table. Place an **Iron Nugget** and a piece of **Andesite** anywhere in the 3×3 grid — the recipe is shapeless, so position does not matter. Each craft yields **2 Andesite Alloy**.
+
+    ```
+    [Iron Nugget] [Andesite]
+         ↓
+    2× Andesite Alloy
+    ```
+
+    Craft at least 4 Andesite Alloy before moving on — you will need them for the Hand Crank and the shafts.
+
+    <Tip>
+      Hover over the Andesite Alloy item in your inventory and press **W** to open its Ponder scene. Ponder shows every recipe and use-case for the item in an animated in-game walkthrough.
+    </Tip>
+  </Step>
+
+  <Step title="Craft a Hand Crank">
+    The Hand Crank recipe requires Andesite Alloy and wooden planks. Shape the following pattern in your crafting table:
+
+    ```
+    [ Planks ] [  Planks ] [ Planks ]
+    [  empty ] [ A.Alloy] [  empty ]
+    [  empty ] [ A.Alloy] [  empty ]
+    ```
+
+    This yields **1 Hand Crank**. Craft one for now — you can make more later when you want additional power sources.
+  </Step>
+
+  <Step title="Place the Hand Crank">
+    Find or clear a small flat area. Place the Hand Crank on the side of any solid block (or directly on a Shaft block). The crank's handle extends outward and a small axle nub faces the block it is attached to — that nub is the rotation output.
+
+    The direction the Hand Crank faces determines which axis rotation travels along. Place it on the north face of a block if you want rotation to propagate east–west along a shaft line running through that block.
+  </Step>
+
+  <Step title="Turn the Hand Crank">
+    **Right-click** the Hand Crank repeatedly to spin it. Each click rotates the crank and pushes rotation into any connected shaft network. You will hear a wooden creaking sound and see the handle animate.
+
+    The crank consumes a tiny amount of hunger (configurable; default multiplier is 0.01 per RPM). It generates rotation at a fixed speed — enough to drive most starter machines.
+  </Step>
+</Steps>
+
+## Connecting with shafts
+
+Rotation produced by the Hand Crank travels through **Shafts** — the most basic kinetic component in Create. A Shaft placed in line with the crank's axis receives and re-transmits rotation to the next block in the chain. Think of them as the wiring of a kinetic network.
+
+**To extend rotation across multiple blocks:**
+
+1. Craft several **Shafts** (1 Andesite Alloy → 2 Shafts at a crafting table).
+2. Place them in a straight line extending outward from the Hand Crank's axle, matching the same axis. For example, if the crank outputs rotation northward, place Shafts on each block to the north.
+3. Right-click the crank again — you will see all connected Shafts spin simultaneously.
+
+<Info>
+  Shafts only transmit rotation along a single axis. To change direction, use a **Gearbox** (which bends rotation 90°) or a **Large Cogwheel** meshing with a **Small Cogwheel**. These also let you change speed.
+</Info>
+
+Shafts can run through any number of blocks as long as nothing interrupts the axis. Inserting a **Cogwheel** anywhere in the line lets you branch rotation in a perpendicular direction.
+
+## Adding a Mechanical Press
+
+The **Mechanical Press** is one of Create's earliest processing machines. Placed above a **Basin**, it stamps items placed in the Basin into pressed outputs — the first step toward making many intermediate Create components.
+
+<Steps>
+  <Step title="Craft a Mechanical Press and a Basin">
+    **Mechanical Press** — requires Iron Ingots and a Large Cogwheel (itself made from Andesite Alloy and a Shaft). Check the full recipe with JEI or the Ponder viewer.
+
+    **Basin** — crafted from Iron Ingots arranged in a U-shape (7 iron ingots).
+  </Step>
+
+  <Step title="Place the Basin and Mechanical Press">
+    Place the **Basin** on the ground. Place the **Mechanical Press** directly **above** the Basin — the press must be in the block space immediately on top of the basin for it to interact with it. You will see a small indicator confirm the connection.
+  </Step>
+
+  <Step title="Connect to the shaft network">
+    The Mechanical Press has a shaft input on its top face (the axis runs horizontally). Extend your existing Shaft line so that one Shaft passes through — or connects to — the Press's input axis. When the shaft network is spinning and rotation reaches the Press, the piston head will begin moving up and down.
+
+    <Warning>
+      The Mechanical Press needs **at least 8 RPM** to operate. A single Hand Crank provides exactly enough. If the press piston does not move, check that the shaft is aligned to the correct axis and that there is no stress overload (all shafts in the network go grey when overloaded).
+    </Warning>
+  </Step>
+
+  <Step title="Insert items and process">
+    Drop items directly into the Basin by right-clicking it, or use a **Funnel** attached to the Basin's side to feed items from a chest automatically. The Mechanical Press will stamp them each time the piston completes a downward stroke.
+
+    Common early recipes:
+    - **Iron Ingot → Iron Sheet** (used in dozens of Create recipes)
+    - **Copper Ingot → Copper Sheet**
+  </Step>
+</Steps>
+
+<Info>
+  **Ponder is your best teacher.** Hover over the Mechanical Press (or any Create block) in your inventory and press **W** to watch an animated scene showing exactly how to place, connect, and operate it. Every Create block has its own Ponder scene — use them freely.
+</Info>
+
+## About maximum speed
+
+The kinetic config caps rotation at **256 RPM** by default (set by `maxRotationSpeed` in Create's server config). Machines connected to a shaft network running faster than this limit will be treated as if they are at the cap — you cannot accidentally over-speed a machine, but you can waste rotational capacity by pushing far beyond what a machine needs.
+
+The Hand Crank operates well below this limit, so over-speeding is not a concern for starter setups. As you scale up to Water Wheels, Steam Engines, and Windmills, keep the speed cap in mind when designing your gearing.
+
+<Tip>
+  Ready to go deeper? The **Core Concepts** section explains the full rotational-force model and the stress system in detail:
+
+  - [Rotational Force](/concepts/rotational-force) — how RPM, shafts, cogwheels, and gearboxes interact
+  - [Stress System](/concepts/stress-system) — capacity, impact, overloading, and how to balance a large network
+</Tip>

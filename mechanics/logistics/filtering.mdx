@@ -1,0 +1,78 @@
+---
+title: "Filtering Items: Attribute Filters and Item Matching"
+sidebarTitle: "Filtering"
+description: "Create's filter system controls which items flow through funnels, tunnels, and arms. Learn basic filters, attribute filters, list filters, and tag-based matching."
+---
+
+Filters control item flow by matching items against a set of criteria. They appear everywhere in Create's logistics layer — in Brass Funnels, Smart Chutes, Brass Tunnels, Mechanical Arms, and Stock Keepers. Mastering the filter system is the key to building sorted, waste-free item networks that only move what you intend.
+
+## Filter Types
+
+Create provides several filter items, each offering a different level of matching power.
+
+<CardGroup cols={2}>
+  <Card title="No Filter (empty slot)" icon="circle-dashed">
+    When no filter item is placed in a slot, every item matches. This is the default state for all filterable blocks — useful when you want unrestricted flow and don't need to discriminate between item types.
+  </Card>
+  <Card title="Item Stack Filter" icon="box">
+    Matches a single specific item type. Place the item you want to match directly into the filter slot (without a dedicated filter item). Only items of that exact type pass through. Does not differentiate by NBT data or count.
+  </Card>
+  <Card title="List Filter" icon="list">
+    A craftable **Filter item** that opens a GUI with multiple item slots. An item passes if it matches **any** entry in the list. Can be toggled between **whitelist** (listed items pass) and **blacklist** (listed items are blocked, all others pass). The list filter is the go-to choice when you need to allow or block a known set of items.
+  </Card>
+  <Card title="Attribute Filter" icon="tag">
+    A craftable **Attribute Filter** that matches items by their properties rather than identity. Attributes include item tags, enchantment presence, food items, weapons, tools, armor, and any attribute registered in the `CreateRegistries.ITEM_ATTRIBUTE_TYPE` registry. Supports conjunctive (AND) and disjunctive (OR) whitelist modes, plus a deny-list mode.
+  </Card>
+</CardGroup>
+
+### Tag Filter (via Attribute Filter)
+
+The Attribute Filter includes a built-in **InTagAttribute** entry that lets you match all items sharing a specific item tag — for example, `#minecraft:logs` to match any log type, or `#forge:ingots/iron` to match all iron ingot variants. This is far more maintainable than listing every item individually, especially in modded environments where multiple mods add variants of the same material.
+
+## Applying Filters
+
+Filters are applied the same way regardless of which logistics block accepts them:
+
+<Steps>
+  <Step title="Hold the filter item">
+    Craft the appropriate filter item (List Filter or Attribute Filter) and configure it in your inventory.
+  </Step>
+  <Step title="Right-click the logistics block">
+    Right-click the Funnel, Smart Chute, Brass Tunnel output, or Mechanical Arm interaction point with the filter item in hand. The filter is consumed into the block's filter slot.
+  </Step>
+  <Step title="Retrieve and edit">
+    Right-click the same block again with an empty hand to remove the filter item. Open it in your inventory to edit the contents, then re-apply it.
+  </Step>
+</Steps>
+
+<Note>
+  For Brass Tunnels with multiple outputs, each output port has its own independent filter slot. Scroll-click (or use the tunnel's GUI) to select which output you're editing before applying a filter.
+</Note>
+
+## Mechanical Arm Filtering
+
+The **Mechanical Arm** is Create's most flexible logistics actor. It picks up items from input positions and deposits them at output positions, and each position can carry its own independent filter.
+
+- **Input filter**: The arm only picks up items from an input position if they match the input filter. Unmatched items are ignored and stay in place.
+- **Output filter**: The arm delivers items to an output position only if the item matches that output's filter. If no output filter matches the held item, the arm puts the item back.
+
+This combination allows a single Mechanical Arm to sort an entire unsorted belt into multiple sorted destinations without any additional routing blocks.
+
+## Stock Keeper and Threshold Switch
+
+<CardGroup cols={2}>
+  <Card title="Threshold Switch" icon="switch">
+    Emits a redstone signal based on the item count in an adjacent inventory. Configure the threshold value and whether the signal is emitted when count is above or below that threshold. Useful for triggering automation only when a buffer is low or full.
+  </Card>
+  <Card title="Stock Keeper" icon="clipboard">
+    Tracks an adjacent storage block and maintains a configured stock level for each item type. When stock of a configured item falls below its target quantity, the Stock Keeper automatically requests a replenishment package from linked Packagers. Uses the same filter items to define which items to track.
+  </Card>
+</CardGroup>
+
+<Info>
+  From version 6.0.10 onward, the Stock Keeper's Recipe Viewer integration supports four sync modes: **Disabled**, **From Viewer** (push requirements from JEI/REI into the keeper), **To Viewer** (show keeper contents in the viewer), and **Both**. This makes it easy to pull a recipe's ingredient list directly into a Stock Keeper's tracking configuration.
+</Info>
+
+<Tip>
+  **Attribute Filters are the most powerful filter type available.** Rather than listing every food item individually, create an Attribute Filter with a single "is a food" attribute entry to match everything edible. Similarly, "has enchantment: Fortune" will catch any enchanted tool with Fortune regardless of tool type — invaluable for sorting enchanted gear from a loot system.
+</Tip>

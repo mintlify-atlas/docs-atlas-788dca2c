@@ -1,0 +1,168 @@
+---
+title: "Block Movement Checks: Controlling Contraption Assembly"
+sidebarTitle: "Movement Checks"
+description: "Register custom movement check callbacks to control whether blocks can be picked up by, moved within, or attached to Create contraptions."
+---
+
+`BlockMovementChecks` (in `com.simibubi.create.api.contraption`) provides five functional-interface registries that control how blocks interact with contraption assembly. When a contraption assembles, Create evaluates each registered check in **reverse-registration order** — the last check registered has the highest priority. The first check to return a non-`PASS` result wins; if all checks return `PASS`, Create falls back to its built-in heuristic.
+
+All registration methods are thread-safe and can be called during parallel mod initialisation.
+
+## CheckResult enum
+
+Every check returns one of three values:
+
+| Value | Meaning |
+|---|---|
+| `CheckResult.SUCCESS` | Explicitly allow — this block passes the check |
+| `CheckResult.FAIL` | Explicitly deny — this block fails the check |
+| `CheckResult.PASS` | No opinion — defer to the next check (or the built-in fallback) |
+
+```java
+// Convert to boolean when you need a definitive answer (throws on PASS)
+boolean allowed = result.toBoolean();
+
+// Create from a boolean
+CheckResult result = CheckResult.of(true);   // SUCCESS
+CheckResult result = CheckResult.of(false);  // FAIL
+CheckResult result = CheckResult.of(null);   // PASS
+```
+
+---
+
+## Check types
+
+### MovementNecessaryCheck
+
+```java
+@FunctionalInterface
+public interface MovementNecessaryCheck {
+    CheckResult isMovementNecessary(BlockState state, Level world, BlockPos pos);
+}
+```
+
+Determines whether a block **needs** to be moved at all during contraption assembly. If a check returns `FAIL` for a block, the contraption assembler treats it as if it were air — the block is skipped and left in place. This is useful for blocks that should always be ignored during assembly (e.g., lightweight decorative blocks that clip through without causing problems).
+
+### MovementAllowedCheck
+
+```java
+@FunctionalInterface
+public interface MovementAllowedCheck {
+    CheckResult isMovementAllowed(BlockState state, Level world, BlockPos pos);
+}
+```
+
+Determines whether a block is **allowed to be part of a contraption at all**. If any check returns `FAIL`, the block is treated as immovable — attempting to assemble a contraption that includes this block will fail outright (the contraption cannot form).
+
+Use this to protect blocks that must never move (e.g., spawn anchors, custom world anchors, or blocks with global state that would break if relocated).
+
+### BrittleCheck
+
+```java
+@FunctionalInterface
+public interface BrittleCheck {
+    CheckResult isBrittle(BlockState state);
+}
+```
+
+Brittle blocks require an adjacent support block to exist before they can remain placed — torches, ladders, pressure plates, and similar. During contraption assembly, Create collects brittle blocks **first** so they are not dropped when their support block is temporarily removed from the world. Return `SUCCESS` for blocks that should be treated this way.
+
+### AttachedCheck
+
+```java
+@FunctionalInterface
+public interface AttachedCheck {
+    CheckResult isBlockAttachedTowards(BlockState state, Level world, BlockPos pos, Direction direction);
+}
+```
+
+Determines whether the given block is **attached** to the neighbour in the specified `direction` — meaning both blocks should be collected together as a unit. Create uses this to pull in multi-block structures, vine-covered walls, bed halves, and fluid tank groups.
+
+Return `SUCCESS` if the block at `pos` is attached towards `direction` (and the block in that direction should therefore also be collected). Return `PASS` to defer to Create's default attachment logic.
+
+Common examples from vanilla Create:
+- Ladders are attached to their support block.
+- Pressure plates are attached to the floor beneath them.
+- Fluid tanks are attached to adjacent tanks in their multi-block.
+- Bed halves are attached to each other.
+
+### NotSupportiveCheck
+
+```java
+@FunctionalInterface
+public interface NotSupportiveCheck {
+    CheckResult isNotSupportive(BlockState state, Direction direction);
+}
+```
+
+Determines whether this block **stops collection from propagating** through the given face. Non-supportive blocks act as barriers during assembly — blocks on the non-supportive side are not automatically pulled in.
+
+Return `SUCCESS` to declare that `state`'s `direction` face is non-supportive (blocks beyond it won't be collected). Return `PASS` to use Create's built-in logic.
+
+Common examples from vanilla Create:
+- Drills are non-supportive on their front face (blocks being drilled are not collected with the drill).
+- Carpets are non-supportive on their top face.
+- Non-extended sticky pistons are non-supportive on their front face.
+
+---
+
+## Registering checks
+
+Call the appropriate static `register*` method on `BlockMovementChecks` during mod initialisation. Lambda syntax works well for simple checks.
+
+```java
+// Prevent a custom block from ever being moved
+BlockMovementChecks.registerMovementAllowedCheck((state, world, pos) -> {
+    if (state.is(MyMod.IMMOVABLE_BLOCK.get())) {
+        return BlockMovementChecks.CheckResult.FAIL;
+    }
+    return BlockMovementChecks.CheckResult.PASS;
+});
+
+// Mark a custom flower pot as brittle
+BlockMovementChecks.registerBrittleCheck(state -> {
+    if (state.is(MyMod.MY_FRAGILE_DECORATION.get())) {
+        return BlockMovementChecks.CheckResult.SUCCESS;
+    }
+    return BlockMovementChecks.CheckResult.PASS;
+});
+
+// Declare a custom directional block as non-supportive on its working face
+BlockMovementChecks.registerNotSupportiveCheck((state, direction) -> {
+    if (state.is(MyMod.MY_DRILL.get())) {
+        Direction facing = state.getValue(MyDrillBlock.FACING);
+        if (direction == facing) {
+            return BlockMovementChecks.CheckResult.SUCCESS;
+        }
+    }
+    return BlockMovementChecks.CheckResult.PASS;
+});
+```
+
+<Info>
+  All five `register*` methods are thread-safe. You may call them at any point during parallel mod initialisation without synchronisation.
+</Info>
+
+---
+
+## Full registration reference
+
+| Method | Check interface | Query method |
+|---|---|---|
+| `BlockMovementChecks.registerMovementNecessaryCheck(check)` | `MovementNecessaryCheck` | `isMovementNecessary(state, world, pos)` |
+| `BlockMovementChecks.registerMovementAllowedCheck(check)` | `MovementAllowedCheck` | `isMovementAllowed(state, world, pos)` |
+| `BlockMovementChecks.registerBrittleCheck(check)` | `BrittleCheck` | `isBrittle(state)` |
+| `BlockMovementChecks.registerAttachedCheck(check)` | `AttachedCheck` | `isBlockAttachedTowards(state, world, pos, direction)` |
+| `BlockMovementChecks.registerNotSupportiveCheck(check)` | `NotSupportiveCheck` | `isNotSupportive(state, direction)` |
+
+You can also call the query methods directly if you need to evaluate Create's assembly logic from your own code — for example, in a custom contraption type implementation.
+
+---
+
+## Priority and ordering
+
+<Note>
+  Checks are evaluated in **reverse-registration order**. The check registered **last** is evaluated **first**. This means your addon's checks will naturally override Create's built-in defaults, which are registered at startup before any addon code runs.
+</Note>
+
+If two addon mods both register a check for the same block with conflicting results, the mod whose check was registered later wins. There is currently no explicit priority system beyond registration order.

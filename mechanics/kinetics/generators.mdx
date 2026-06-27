@@ -1,0 +1,129 @@
+---
+title: "Rotation Generators: Powering Your Kinetic Network"
+sidebarTitle: "Generators"
+description: "Create offers multiple rotation sources — from manual Hand Cranks to Steam Engines. Compare output, fuel, and placement requirements for each generator type."
+---
+
+Every machine in Create ultimately traces its power back to a rotation generator. Generators convert some external input — player effort, flowing water, burning fuel, or pressurised steam — into rotational force that spreads across your kinetic network. Choosing the right generator for a given situation balances availability, throughput, and the Stress Unit (SU) capacity you need. This page covers every built-in source of rotation and how to get the most out of each.
+
+<Info>
+  Stress Units and RPM work together: a generator contributes both a rotation speed (RPM) and a capacity (SU) to the network. Consumers draw from that capacity. For a full explanation of the stress system, see [Stress System](/concepts/stress-system).
+</Info>
+
+## Hand Crank
+
+The Hand Crank is the simplest way to generate rotation — right-click it repeatedly and you will spin the shaft it faces. It requires no fuel, no water, and no infrastructure, making it the natural starting point before you have access to more permanent sources.
+
+**How it works.** Each right-click on the crank advances the shaft by a small angle. Holding the button down produces a continuous stream of rotation. The speed is tied directly to how fast you click, so the crank can reach a surprising RPM in a pinch.
+
+**Resource requirements.** Player hunger. Every click consumes a small amount of exhaustion calculated as `speed × crankHungerMultiplier`. With the default multiplier of `0.01`, turning the crank quickly will drain your food bar noticeably over time.
+
+<Tip>
+  Keep a stack of food nearby when bootstrapping a new base. The Hand Crank is perfect for one-off processing (a single press operation, for instance) but is impractical for sustained automation.
+</Tip>
+
+---
+
+## Water Wheel
+
+The Water Wheel and its larger sibling, the Large Water Wheel, are the first renewable generators most players build. Place one in a stream and it begins turning passively as long as water flows across its paddles.
+
+**How it works.** The wheel scores each adjacent fluid cell for the direction and speed of water flow relative to its rotation plane. Each flowing cell that pushes in the correct direction contributes `+1` to the score; one that pushes against subtracts `−1`. The resulting signed total is clamped to `±1` and then scaled by `8 / size` to give the generated RPM.
+
+For a standard Water Wheel the formula simplifies to: one maximally-flowing water source touching the right side of the wheel produces **8 RPM**. A Large Water Wheel (size = 2) produces **4 RPM** from the same flow, but offers much greater SU capacity because of its higher stress multiplier.
+
+**Resource requirements.** Flowing water or lava (lava also works and awards an advancement). No consumable fuel is needed beyond the source blocks themselves.
+
+<Tip>
+  Funnel water through a narrow channel that flows directly across all exposed paddles. An optimally-fed Water Wheel achieves its maximum score with a single side fully covered in flowing water. Bubble columns (soul sand or magma blocks) also count as directional flow.
+</Tip>
+
+---
+
+## Windmill Bearing
+
+A Windmill Bearing assembled with Sail blocks converts wind into rotation. Unlike the Water Wheel it is not speed-limited by flow direction, but it does require a minimum number of sails before it will spin at all.
+
+**How it works.** Right-click the bearing with a Wrench or apply a redstone signal to assemble the structure. The bearing collects all Sail (or Sail Frame) blocks attached to it into a contraption and begins rotating. The RPM generated scales with the total sail count:
+
+- Minimum sail blocks to function: **8** (`minimumWindmillSails` config)
+- Sails needed per additional RPM: **8** (`windmillSailsPerRPM` config)
+
+So 8 sails produce roughly 1 RPM, 16 sails produce ~2 RPM, and 64 sails reach ~8 RPM. The practical cap depends on your maximum allowed rotation speed (`maxRotationSpeed = 256`).
+
+**Resource requirements.** Sail blocks (crafted from Wool and Sticks) and open vertical space for the blades to sweep through unobstructed.
+
+<Tip>
+  Build the sail array in a cross or pinwheel pattern extending from the bearing. Any block that is not a Sail but is attached to the contraption still counts toward block mass, increasing stress capacity without contributing RPM.
+</Tip>
+
+---
+
+## Furnace Engine
+
+The Furnace Engine mounts directly onto the side of a Furnace (or Blast Furnace / Smoker) and draws mechanical power from the heat of whatever fuel is burning inside.
+
+**How it works.** The engine reads the furnace's current "lit" state and the heat level of the burning fuel. A furnace that has just been lit produces lower efficiency than one running at full temperature with a high-value fuel. Efficiency scales between 0 and 1 and directly determines the RPM and SU the engine contributes.
+
+**Resource requirements.** Solid fuel placed inside the adjacent furnace. Higher-density fuels (blaze rods, lava buckets) sustain the engine longer and at higher efficiency.
+
+<Tip>
+  Pair the Furnace Engine with a hopper or funnel to keep it automatically fuelled. It pairs naturally with early-game automation before you have access to Blaze Burners or fluid infrastructure.
+</Tip>
+
+---
+
+## Steam Engine
+
+The Steam Engine is the most powerful generator in the base mod. It attaches to a Fluid Tank that holds water and requires a Blaze Burner to heat that water into steam, providing substantial RPM and SU capacity.
+
+**How it works.** The engine block faces a Powered Shaft two blocks away. Behind the engine (opposite to the shaft) must be a Fluid Tank block entity acting as the boiler. The Boiler's efficiency — read from the tank's heat level and total tank size — is multiplied by a speed-level factor to compute the RPM conveyed to the shaft. Multiple Steam Engines can attach to the same boiler from different sides to multiply output.
+
+**Resource requirements.**
+- A Fluid Tank (or multi-tank boiler) filled with water.
+- A Blaze Burner (or other heat source) beneath the tank to heat it.
+- A Powered Shaft placed two blocks in front of the engine.
+
+<Note>
+  Larger boiler multi-blocks (more fluid tanks) increase the total efficiency ceiling, enabling higher RPM. Consult the in-game boiler interface to track heat level and steam pressure.
+</Note>
+
+---
+
+## Creative Motor
+
+The Creative Motor is a debug and creative-mode tool that generates an arbitrary amount of rotation with no fuel or resource requirement. Its speed is configured by scrolling while looking at it with an empty hand or by using a Wrench.
+
+**How it works.** The motor always outputs the exact RPM value set by the scroll interface. Speed defaults to **16 RPM** and can be set anywhere between `−256` and `+256` RPM (the range is clamped to `maxRotationSpeed = 256`). Negative values reverse the direction of rotation.
+
+**Resource requirements.** None. This block is only available in Creative mode.
+
+<Warning>
+  The Creative Motor ignores the stress system entirely — it will never stall regardless of load. Do not use it to test stress capacity; use a proper generator on a survival world to get accurate numbers.
+</Warning>
+
+---
+
+## Generator Comparison
+
+| Generator | Fuel / Resource | Approx. Max RPM | Notes |
+|---|---|---|---|
+| Hand Crank | Player hunger | ~16 (player-dependent) | Manual only; causes exhaustion |
+| Water Wheel | Flowing water or lava | 8 (small), 4 (large) | Free and renewable; limited speed |
+| Large Water Wheel | Flowing water or lava | 4 | Higher SU capacity than small |
+| Windmill Bearing | Sail blocks + space | ~8 (64 sails) | Scales with sail count (8 sails/RPM) |
+| Furnace Engine | Solid fuel | Varies with fuel quality | Good early-game; needs constant fuel |
+| Steam Engine | Water + Blaze Burner | High (boiler-dependent) | Best SU/RPM; requires fluid infrastructure |
+| Creative Motor | None | 256 | Creative mode only; ignores stress |
+
+---
+
+## Combining Generators
+
+A single kinetic network can be driven by multiple generators simultaneously. Each generator contributes its stress capacity to the shared pool, letting you scale up your network's total SU budget without replacing existing sources. For example, four Water Wheels feeding the same shaft network add their capacities together even though their RPM contribution comes only from the fastest source that is accepted by the network.
+
+<Tip>
+  When your network starts stalling, add another generator of the same RPM rather than switching to a faster one. Matching speeds means the new source integrates without conflicts.
+</Tip>
+
+See [Stress System](/concepts/stress-system) for a full breakdown of how capacity, impact, and stalling interact.

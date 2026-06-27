@@ -1,0 +1,248 @@
+---
+title: "Contraption Storage Types: Custom Inventories on Moving Contraptions"
+sidebarTitle: "Contraption Storage"
+description: "Register MountedItemStorageType and MountedFluidStorageType to allow custom inventory blocks to retain and carry their contents when mounted on a Create contraption."
+---
+
+When a contraption assembles, Create scans every block in the structure and looks for a registered `MountedItemStorageType` or `MountedFluidStorageType` for it. If a match is found, the block's contents are serialised into the contraption entity for transport and restored when the contraption disassembles. By default, only Create's own storage blocks (vaults, chests, fluid tanks) participate in this system. Register your own storage types to extend this behaviour to custom blocks.
+
+## MountedItemStorageType
+
+`com.simibubi.create.api.contraption.storage.item.MountedItemStorageType<T>` is an abstract class that acts as a factory for `MountedItemStorage` instances.
+
+```java
+public abstract class MountedItemStorageType<T extends MountedItemStorage> {
+
+    /**
+     * NeoForge Codec that serialises/deserialises the storage type by registry name.
+     * Used internally by Create — you do not need to call this directly.
+     */
+    public static final Codec<MountedItemStorageType<?>> CODEC = ...;
+
+    /**
+     * Maps Block → MountedItemStorageType<?>.
+     * Register your block here so Create knows to use your type when assembling
+     * a contraption containing that block.
+     */
+    public static final SimpleRegistry<Block, MountedItemStorageType<?>> REGISTRY = ...;
+
+    /** The MapCodec used to serialise/deserialise instances of T. */
+    public final MapCodec<? extends T> codec;
+
+    protected MountedItemStorageType(MapCodec<? extends T> codec) { ... }
+
+    /**
+     * Create a MountedItemStorage for the block at the given position.
+     * Return null if this block should not be mounted (e.g. wrong block entity type).
+     */
+    @Nullable
+    public abstract T mount(Level level, BlockState state, BlockPos pos,
+                            @Nullable BlockEntity be);
+
+    /**
+     * Registrate helper: creates a block-builder transformer that registers
+     * this storage type for the block once it is registered.
+     */
+    public static <B extends Block, P>
+    NonNullUnaryOperator<BlockBuilder<B, P>> mountedItemStorage(
+        RegistryEntry<MountedItemStorageType<?>, ? extends MountedItemStorageType<?>> type) { ... }
+}
+```
+
+`MountedItemStorage` (the base class for storage instances) extends `IItemHandlerModifiable` and exposes methods for unmounting contents back to the world, handling player interaction (opening a GUI), and customising menu display:
+
+```java
+public abstract class MountedItemStorage implements IItemHandlerModifiable {
+
+    /** Restore this storage's contents to the world when the contraption disassembles. */
+    public abstract void unmount(Level level, BlockState state, BlockPos pos,
+                                 @Nullable BlockEntity be);
+
+    /**
+     * Called server-side when a player clicks this storage on a stationary contraption.
+     * Default: opens a generic chest GUI if the handler has 1–6 complete rows of 9 slots.
+     */
+    public boolean handleInteraction(ServerPlayer player, Contraption contraption,
+                                     StructureBlockInfo info) { ... }
+}
+```
+
+## Registering an Item Storage Type
+
+<Steps>
+  <Step title="Create your storage class">
+    Extend `MountedItemStorage` (or `WrapperMountedItemStorage` for quick wrapping of an existing handler). Implement `unmount()` to write items back to the block entity.
+  </Step>
+  <Step title="Create your storage type class">
+    Extend `MountedItemStorageType<YourStorage>` and implement `mount()`, returning a new instance of your storage class populated from the block entity.
+  </Step>
+  <Step title="Register with DeferredRegister">
+    ```java
+    import com.simibubi.create.api.contraption.storage.item.MountedItemStorageType;
+    import com.simibubi.create.api.registry.CreateRegistries;
+    import net.neoforged.neoforge.registries.DeferredRegister;
+
+    public class MyStorageTypes {
+        public static final DeferredRegister<MountedItemStorageType<?>> REGISTER =
+            DeferredRegister.create(CreateRegistries.MOUNTED_ITEM_STORAGE_TYPE, "mymod");
+
+        public static final RegistryObject<MountedItemStorageType<MyChestStorage>> MY_CHEST =
+            REGISTER.register("my_chest", () -> new MyChestStorageType());
+    }
+    ```
+  </Step>
+  <Step title="Map the block to the type">
+    After both the block and the storage type are registered, add a mapping in `MountedItemStorageType.REGISTRY`:
+
+    ```java
+    // In your mod's common setup or a FMLCommonSetupEvent listener:
+    MountedItemStorageType.REGISTRY.register(
+        MyBlocks.MY_CHEST.get(),
+        MyStorageTypes.MY_CHEST.get()
+    );
+    ```
+
+    If you use Registrate, use the `mountedItemStorage(...)` builder helper instead:
+
+    ```java
+    REGISTRATE.block("my_chest", MyChestBlock::new)
+        .transform(MountedItemStorageType.mountedItemStorage(MyStorageTypes.MY_CHEST))
+        ...
+        .register();
+    ```
+  </Step>
+</Steps>
+
+## MountedFluidStorageType
+
+`com.simibubi.create.api.contraption.storage.fluid.MountedFluidStorageType<T>` mirrors the item storage API exactly, but for fluid-holding block entities. The corresponding storage base class is `MountedFluidStorage`, which implements NeoForge's `IFluidHandler`.
+
+```java
+public abstract class MountedFluidStorageType<T extends MountedFluidStorage> {
+
+    public static final Codec<MountedFluidStorageType<?>> CODEC = ...;
+
+    /** Maps Block → MountedFluidStorageType<?>. */
+    public static final SimpleRegistry<Block, MountedFluidStorageType<?>> REGISTRY = ...;
+
+    public final MapCodec<? extends T> codec;
+
+    protected MountedFluidStorageType(MapCodec<? extends T> codec) { ... }
+
+    @Nullable
+    public abstract T mount(Level level, BlockState state, BlockPos pos,
+                            @Nullable BlockEntity be);
+
+    /** Registrate helper analogous to MountedItemStorageType.mountedItemStorage(). */
+    public static <B extends Block, P>
+    NonNullUnaryOperator<BlockBuilder<B, P>> mountedFluidStorage(
+        RegistryEntry<MountedFluidStorageType<?>, ? extends MountedFluidStorageType<?>> type) { ... }
+}
+```
+
+Registration is identical to item storage, using `CreateRegistries.MOUNTED_FLUID_STORAGE_TYPE`:
+
+```java
+public static final DeferredRegister<MountedFluidStorageType<?>> FLUID_REGISTER =
+    DeferredRegister.create(CreateRegistries.MOUNTED_FLUID_STORAGE_TYPE, "mymod");
+
+public static final RegistryObject<MountedFluidStorageType<MyTankStorage>> MY_TANK =
+    FLUID_REGISTER.register("my_tank", () -> new MyTankStorageType());
+```
+
+## SyncedMountedStorage
+
+For storages that need the client to know their contents (e.g. for rendering), implement the `SyncedMountedStorage` interface alongside your `MountedItemStorage` or `MountedFluidStorage`:
+
+```java
+public interface SyncedMountedStorage {
+
+    /** Return true when this storage's contents have changed since the last sync. */
+    boolean isDirty();
+
+    /** Called after a sync packet has been sent to the client. */
+    void markClean();
+
+    /**
+     * Called on the client after receiving a sync from the server.
+     * Use this to update any client-side rendering state.
+     */
+    void afterSync(Contraption contraption, BlockPos localPos);
+}
+```
+
+Create will automatically include storages implementing this interface in its contraption sync cycle.
+
+## Menu Access (MountedStorageMenus)
+
+Players can open a GUI when they right-click a stationary contraption's storage block. `MountedItemStorage.handleInteraction` drives this and delegates to `MountedStorageMenus` for standard chest-style GUIs:
+
+```java
+public class MountedStorageMenus {
+
+    /**
+     * Create a generic chest menu provider for an item handler with 1–6 complete
+     * rows of 9 slots. Returns null if the handler slot count is not compatible.
+     */
+    @Nullable
+    public static MenuProvider createGeneric(
+        Component menuName,
+        IItemHandlerModifiable handler,
+        Predicate<Player> stillValid,
+        Consumer<Player> onClose) { ... }
+
+    /**
+     * Create a 9-slot dispenser-style menu provider.
+     * Returns null if the handler does not have exactly 9 slots.
+     */
+    @Nullable
+    public static MenuProvider createGeneric9x9(
+        Component name,
+        IItemHandlerModifiable handler,
+        Predicate<Player> stillValid,
+        Consumer<Player> onClose) { ... }
+}
+```
+
+Override `createMenuProvider` in your `MountedItemStorage` subclass to return a custom `MenuProvider` for non-standard inventory layouts.
+
+## Wrapper Base Classes
+
+For the common case of adapting an existing handler, Create provides two partial implementations that forward all `IItemHandler` / `IFluidHandler` calls to a wrapped delegate:
+
+<CardGroup cols={2}>
+  <Card title="WrapperMountedItemStorage&lt;T&gt;" icon="box">
+    Extend this and pass your `IItemHandlerModifiable` to the constructor. Only `unmount()` remains abstract.
+
+    ```java
+    public abstract class WrapperMountedItemStorage<T extends IItemHandlerModifiable>
+        extends MountedItemStorage {
+
+        protected final T wrapped;
+
+        protected WrapperMountedItemStorage(
+            MountedItemStorageType<?> type, T wrapped) { ... }
+        // getSlots, getStackInSlot, insertItem, extractItem, etc.
+        // all delegate to `wrapped`
+    }
+    ```
+  </Card>
+  <Card title="WrapperMountedFluidStorage&lt;T&gt;" icon="droplet">
+    Extend this and pass your `IFluidHandler` to the constructor. Delegates `getTanks`, `getFluidInTank`, `fill`, `drain`, etc.
+
+    ```java
+    public abstract class WrapperMountedFluidStorage<T extends IFluidHandler>
+        extends MountedFluidStorage {
+
+        protected final T wrapped;
+
+        protected WrapperMountedFluidStorage(
+            MountedFluidStorageType<?> type, T wrapped) { ... }
+    }
+    ```
+  </Card>
+</CardGroup>
+
+<Tip>
+  Use `WrapperMountedItemStorage` / `WrapperMountedFluidStorage` when your block entity already implements a standard handler. You only need to implement `unmount()` to write the contents back after the contraption lands.
+</Tip>

@@ -1,0 +1,161 @@
+---
+title: "Train Scheduling: Automating Routes and Stops"
+sidebarTitle: "Scheduling"
+description: "Create's schedule system programs trains to follow routes, load/unload at stations, wait for conditions, and run automatically without a driver."
+---
+
+Schedules turn a manually driven train into a fully autonomous vehicle. A train with an active schedule follows a list of instructions — traveling to named stations, waiting for cargo thresholds, delaying for set durations, and responding to redstone — then loops back to the beginning indefinitely. Once a schedule is assigned, no player needs to be present for the train to operate.
+
+## Schedule Basics
+
+A **Schedule** is an ordered list of `ScheduleEntry` objects. Each entry contains exactly one **instruction** (what to do) paired with one or more **wait conditions** (when to consider that instruction complete and move on). The schedule loops by default (`cyclic = true`) — when the last entry finishes, the train returns to entry 0.
+
+Schedules are stored on a **Schedule item** — a special book-like item that carries the schedule data as NBT. You can:
+
+- **Create and edit a schedule** by right-clicking the Schedule item to open the schedule editor screen (`ScheduleScreen`).
+- **Assign a schedule to a train at a station** — right-click the station while holding the Schedule item. The item is consumed and the train's runtime (`ScheduleRuntime`) takes ownership.
+- **Auto-assign via station slot** — insert the Schedule item into the station's inventory slot. Any train that arrives at the station will have that schedule applied automatically.
+
+<Note>
+A schedule remains saved on the train even when you disassemble it. When you reassemble the same train at its station, the schedule is restored — the station drops the schedule item back into your hand or onto the ground.
+</Note>
+
+## Schedule Instructions
+
+Instructions define *where the train goes* or *what action it takes*. The train executes the instruction first, then evaluates its wait conditions before advancing to the next entry.
+
+<CardGroup cols={2}>
+  <Card title="Destination" icon="location-dot">
+    Navigate to a named station. The filter supports exact names, wildcard patterns (e.g., `Mine_*`), and full glob syntax. The train pathfinds across the entire connected track graph to reach the closest matching station.
+  </Card>
+  <Card title="Rename Train" icon="tag">
+    Change the train's display name mid-route. Useful for showing cargo state or trip phase on Display Boards (`ChangeTitleInstruction`).
+  </Card>
+  <Card title="Change Throttle" icon="gauge">
+    Override the train's speed cap for the next leg of travel (`ChangeThrottleInstruction`). Set a lower throttle before approaching a busy junction, then restore full speed on clear track.
+  </Card>
+  <Card title="Deliver Packages" icon="box">
+    Deposit any packages the train is carrying that match the current station's configured address (`DeliverPackagesInstruction`). Used with the Package Port logistics system.
+  </Card>
+  <Card title="Fetch Packages" icon="box-open">
+    Pick up packages addressed to destinations reachable from this station (`FetchPackagesInstruction`). Pairs with Postboxes and Package Ports near the station.
+  </Card>
+</CardGroup>
+
+## Wait Conditions
+
+Wait conditions define *when a train departs* from its current station. The train stays put until at least one condition column is satisfied. Multiple conditions in the same column are evaluated as AND (all must pass); multiple columns are evaluated as OR (any column passing is sufficient).
+
+All condition types registered in `Schedule.java`:
+
+<CardGroup cols={2}>
+  <Card title="Delay" icon="clock">
+    Wait a fixed amount of time — configurable in seconds, minutes, or game ticks (`ScheduledDelay`). The simplest condition: the train waits exactly as long as you specify, then departs.
+  </Card>
+  <Card title="Time of Day" icon="sun">
+    Wait until a specific in-game time of day is reached (`TimeOfDayCondition`). Supports 12-hour or 24-hour display, configurable minute precision, and repeat intervals (every 24h down to every 15 min of in-game time).
+  </Card>
+  <Card title="Item Threshold" icon="box-archive">
+    Wait until the train's cargo inventory contains a specific number of a given item (`ItemThresholdCondition`). Supports exact item matching, filter tags, and an "at least N stacks" mode as well as a raw item count mode.
+  </Card>
+  <Card title="Fluid Threshold" icon="droplet">
+    Wait until a fluid tank in the train's contraption holds at least (or at most) a specified amount of fluid (`FluidThresholdCondition`). Works with any fluid container mounted on the carriages.
+  </Card>
+  <Card title="Redstone Link" icon="bolt">
+    Wait for a Redstone Link frequency signal to be active at the station area (`RedstoneLinkCondition`). Lets external redstone logic gate train departures.
+  </Card>
+  <Card title="Station Powered" icon="plug">
+    Wait until the station block itself receives a redstone signal (`StationPoweredCondition`). Simpler than Redstone Link — just power the station block directly.
+  </Card>
+  <Card title="Player Passenger Count" icon="person">
+    Wait until a minimum (or maximum) number of players are seated in the train's passenger seats (`PlayerPassengerCondition`). Useful for commuter trains that wait for boarders.
+  </Card>
+  <Card title="Idle Cargo" icon="hourglass">
+    Wait until no items have entered or left the train's inventory for a configurable number of ticks (`IdleCargoCondition`). Detects when loading or unloading has finished without needing to know exact counts.
+  </Card>
+  <Card title="Station Unloaded" icon="eye-slash">
+    Immediately satisfied when the station's chunk is unloaded (`StationUnloadedCondition`). Prevents trains from waiting indefinitely for conditions in unloaded areas.
+  </Card>
+</CardGroup>
+
+## Conditional and Dynamic Routing
+
+Each schedule entry can have multiple condition **columns**. When the train arrives at a station and evaluates conditions, the index of the first satisfied column determines which entry to go to next — not necessarily the next one in sequence.
+
+This enables branching logic without separate schedules:
+
+- **Column 0 satisfied** → advance normally to entry N+1
+- **Column 1 satisfied** → jump to a different entry index (skip to unload station)
+- **No column satisfied** → keep waiting
+
+Use this pattern to build a cargo train that checks whether it has a full load before departing to the unload station, or falls back to waiting longer if the mine hasn't filled the buffer yet.
+
+<Tip>
+Combine an Item Threshold condition with a Delay fallback in a second column: the train departs when full OR when a timeout expires — whichever comes first. This prevents a single slow mine from blocking the entire route.
+</Tip>
+
+## Automated Loading and Unloading
+
+For fully automatic cargo routes, pair the schedule with **Portable Storage Interfaces** (PSIs):
+
+- Mount a **PSI on the train** (attached to the carriage contraption, facing the side of a chest or barrel on board).
+- Place a **matching PSI at the station** (in the world, facing toward where the train will stop).
+- When the train halts, the two PSIs connect and items transfer automatically.
+- Use an **Item Threshold** or **Idle Cargo** wait condition to ensure the transfer completes before the train departs.
+
+The same principle applies to fluid tanks — use Fluid Pipes with a Portable Fluid Interface instead.
+
+## CC:Tweaked Integration
+
+When CC:Tweaked is installed, both the Station block and the Signal block become computer peripherals. The `StationBlockEntity` fires named events to attached computers via `AbstractComputerBehaviour`:
+
+| Event | Fired When |
+|---|---|
+| `StationTrainPresenceEvent` (IMMINENT) | A train begins navigating toward this station |
+| `StationTrainPresenceEvent` (ARRIVAL) | A train arrives and stops at this station |
+| `StationTrainPresenceEvent` (DEPARTURE) | A train departs from this station |
+
+Computers can listen for these events and respond — opening gates, triggering announcements, logging arrivals, or even sending redstone signals to condition other trains.
+
+For signal-side integration, `SignalStateChangeEvent` fires whenever a signal transitions between RED, YELLOW, and GREEN states. See the compatibility documentation for full peripheral API details.
+
+## Tutorial: A Complete Automated Cargo Route
+
+The steps below walk through a two-station ore train that mines continuously and delivers to a base, requiring no player intervention after initial setup.
+
+<Steps>
+  <Step title="Name your stations">
+    Place two Train Stations on your track network. Name the first one `Mine` and the second `Base`. Both names must be exact — or you can use a pattern like `Mine*` and `Base*` in the schedule filter if you plan to add more stations later.
+  </Step>
+  <Step title="Set up loading at Mine">
+    At the `Mine` station, place a Mechanical Drill or Deployer on the train contraption to extract ore. Add a chest or barrel on the train to store it. Place a Portable Storage Interface on the train and a matching one at the mine station, both pointing inward toward each other.
+  </Step>
+  <Step title="Set up unloading at Base">
+    At the `Base` station, add another pair of PSIs — one on the train, one at the station — to push items off the train into a base storage system on arrival.
+  </Step>
+  <Step title="Create the schedule">
+    Open a Schedule item and add two entries:
+    - **Entry 1:** Instruction = `Destination: Mine` | Condition = `Item Threshold: [ore] ≥ 64 items`
+    - **Entry 2:** Instruction = `Destination: Base` | Condition = `Delay: 10 seconds`
+
+    The train will travel to Mine, wait until it has at least 64 ore, travel to Base, wait 10 seconds for unloading, then loop.
+  </Step>
+  <Step title="Assign the schedule">
+    Hold the completed Schedule item and right-click the `Mine` station while the train is present. The schedule is applied and the train begins its automated loop immediately.
+  </Step>
+</Steps>
+
+## The Train Observer Block
+
+The **Train Observer** is a companion block to the signal system — it detects passing trains and emits a redstone pulse, but it does not participate in signal block calculations.
+
+Place the Observer adjacent to a track, and it outputs a redstone signal of strength **15** for a brief moment whenever a train passes. Applications include:
+
+- Counting trains passing a checkpoint
+- Opening and closing gates or doors when a train approaches
+- Triggering announcement displays
+- Starting or stopping machines that should only run when a train is present
+
+<Info>
+The Train Observer is not a substitute for signals. It does not stop trains or coordinate access to track sections — it only observes. For collision prevention on shared tracks, use Block Signals as described in the Signals guide.
+</Info>

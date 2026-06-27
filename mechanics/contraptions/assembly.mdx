@@ -1,0 +1,115 @@
+---
+title: "Assembling Contraptions: Moving Structures with Create"
+sidebarTitle: "Assembly"
+description: "Learn how to build, anchor, and move contraptions using Mechanical Pistons, Bearings, Pulleys, and Gantries. Covers block limits and movement types."
+---
+
+A contraption is a multi-block structure that Create treats as a single moving entity. When a mover block — a piston, bearing, pulley, or gantry carriage — receives rotation, it assembles all physically connected blocks into a contraption, lifts them out of the world, and carries them as one rigid body. The blocks retain their block states, tile entity data, and inventories throughout the journey and are placed back into the world when the contraption disassembles.
+
+Understanding how contraptions are assembled, what rules govern which blocks can be collected, and how movement speed is controlled will save you from common pitfalls and let you build everything from simple sliding doors to fully automated mining rigs.
+
+---
+
+## Choosing a Mover
+
+Different mover types suit different motion patterns. Each has distinct placement requirements and a configurable maximum range.
+
+<CardGroup cols={2}>
+  <Card title="Mechanical Piston" icon="arrow-right">
+    Produces **linear motion** along one axis. Extension Poles placed behind the piston head extend its maximum reach up to `maxPistonPoles = 64` poles. The piston head pushes the payload structure on its front face; the payload must touch the head directly or through poles.
+  </Card>
+  <Card title="Mechanical Bearing" icon="rotate-right">
+    Produces **rotational motion** around the shaft axis. Ideal for windmills, spinning displays, rotating doors, and clock hands. The bearing assembles all blocks touching its front face into a spinning contraption.
+  </Card>
+  <Card title="Rope Pulley" icon="arrow-up">
+    Lifts and lowers a structure **vertically** by extending a rope of up to `maxRopeLength = 384` blocks. Useful for elevators and descending mining platforms.
+  </Card>
+  <Card title="Gantry Carriage" icon="table-columns">
+    Slides a contraption along a **Gantry Shaft track**, enabling precise linear travel over long distances. Multiple carriages can be stacked on perpendicular axes for two-axis or three-axis movement.
+  </Card>
+</CardGroup>
+
+<Card title="Elevator" icon="elevator">
+  A dedicated vertical transport system for players and items. Place Elevator Pulley blocks at the top and bottom of the shaft and right-click to assemble. The elevator car rises and descends when rotation is applied.
+</Card>
+
+---
+
+## Building Rules
+
+### Physical connectivity
+Every block you want a contraption to carry must be **physically connected** (touching face-to-face) to the mover's collection point — the piston head, the bearing's front face, the pulley's bottom, or the carriage's attachment face. A block that is only diagonally adjacent or separated by a gap will not be collected.
+
+### Chassis Blocks
+A Chassis Block expands the collection area around itself by harvesting all blocks within a configurable range on its flat faces. The maximum range per chassis is `maxChassisRange = 16` blocks. Chassis blocks are essential for wide, flat structures like mining platforms or large doors where you need to collect blocks across a broad surface without individually connecting each one to the mover.
+
+### Super Glue
+Super Glue bonds two adjacent blocks together so they move as one unit regardless of whether they are directly connected to the mover. Apply it by right-clicking the shared face between two blocks. Useful for attaching decorative elements, storage blocks, or actors that would otherwise not be part of the connected graph.
+
+### Maximum block count
+A single contraption can contain at most **2 048 blocks** (`maxBlocksMoved` config, default 2048). Attempting to assemble a larger structure will show an assembly error. Split large builds into multiple smaller contraptions, or raise the config limit if your server hardware allows it.
+
+<Note>
+  Blocks with open inventories — Chests, Barrels, Vaults — carry their entire contents when assembled into a contraption. Their items travel with the structure and are restored to the block when it disassembles. Plan your storage placement so items end up accessible after disassembly.
+</Note>
+
+---
+
+## Starting and Stopping Movement
+
+A mover only assembles and moves when it receives **rotational input** from the kinetic network. The speed of movement maps directly to RPM:
+
+- **Mechanical Piston** — higher RPM extends and retracts faster.
+- **Rope Pulley** — higher RPM raises or lowers faster.
+- **Gantry Carriage** — higher RPM travels along the shaft faster.
+- **Mechanical Bearing** — higher RPM increases angular velocity (degrees per second).
+
+Cutting the rotation source (removing the generator, using a Clutch, or applying a redstone signal to a Clutch) stops movement immediately. A Clutch block inserted into the shaft line lets you toggle a contraption on and off with redstone without disassembling it.
+
+---
+
+## Blocks That Cannot Move
+
+Some blocks are flagged as unmovable by default and will cause assembly to fail if included in a structure:
+
+| Block | Default setting |
+|---|---|
+| Obsidian | `UNMOVABLE` |
+| Reinforced Deepslate | `UNMOVABLE` |
+| Mob Spawners | `NO_PICKUP` (can move but not be picked up as an item) |
+| Budding Amethyst | `NO_PICKUP` |
+
+These defaults can be changed in the server config under `contraptions.movableObsidian`, `contraptions.movableReinforcedDeepslate`, etc. using the `ContraptionMovementSetting` enum values (`UNMOVABLE`, `NO_PICKUP`, or `MOVABLE`).
+
+---
+
+## Assembling a Simple Piston Contraption
+
+<Steps>
+  <Step title="Place the Mechanical Piston">
+    Place the Mechanical Piston with its head facing the direction you want the payload to travel. The head is the piston tip; the back is where Extension Poles and the shaft connect.
+  </Step>
+  <Step title="Add Extension Poles (optional)">
+    Stack Piston Extension Pole blocks behind the piston (on the shaft side) to increase how far it can extend. Each pole adds one block of travel range, up to the `maxPistonPoles = 64` limit.
+  </Step>
+  <Step title="Build the payload structure">
+    Construct the blocks you want to move directly against the piston head. Every block must be physically connected in a chain back to the head. Use Chassis Blocks to collect wide flat structures or Super Glue to attach disconnected pieces.
+  </Step>
+  <Step title="Connect rotation">
+    Run a shaft or belt from your kinetic network to the back of the piston. The piston will extend while rotation is applied in one direction and retract when it reverses. Use a Gearbox or reversed motor to control direction.
+  </Step>
+  <Step title="Verify and test">
+    Stand clear of the piston's path and apply rotation. Watch for assembly errors (red text above the piston) that indicate a block could not be collected — typically caused by an unmovable block or exceeding the block count limit.
+  </Step>
+</Steps>
+
+---
+
+## Configuration Reference
+
+| Config key | Default | Description |
+|---|---|---|
+| `maxBlocksMoved` | 2048 | Maximum blocks in a single contraption |
+| `maxPistonPoles` | 64 | Maximum Extension Poles behind a Mechanical Piston |
+| `maxRopeLength` | 384 | Maximum rope length for a Rope Pulley |
+| `maxChassisRange` | 16 | Maximum collection radius per Chassis Block |

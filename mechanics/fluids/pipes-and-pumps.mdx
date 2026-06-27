@@ -1,0 +1,106 @@
+---
+title: "Fluid Pipes and Pumps: Moving Fluids with Create"
+sidebarTitle: "Pipes & Pumps"
+description: "Create's fluid network uses pipes, pumps, and valves to move fluids around your world. Learn pressure direction, pipe connections, and pump placement."
+---
+
+Fluids in Create don't flow on their own — they travel through pressurized pipe networks driven by **Mechanical Pumps**. A pump establishes a flow direction through the network, and every pipe connected to that pump becomes part of a single pressurized circuit. Understanding how pipes connect, how pumps set direction, and which specialized attachments are available is the foundation for building any fluid-handling system in Create.
+
+## Fluid Pipes
+
+Fluid Pipes are the basic conduit for moving liquids from one place to another. Place them end-to-end and they automatically connect to adjacent pipes, fluid blocks, and fluid-capable block faces (tanks, spouts, basins, etc.).
+
+<CardGroup cols={2}>
+  <Card title="Fluid Pipe" icon="pipe-section">
+    The standard pipe. Connects in all six directions to neighbouring pipes and fluid-capable blocks. Right-click with a Wrench to disconnect a specific face.
+  </Card>
+  <Card title="Encased Pipe" icon="pipe-encased">
+    A pipe wrapped in a material casing (Andesite, Brass, Copper). It only connects on its two axial ends, letting you run pipes cleanly through walls or floors without accidentally picking up side connections.
+  </Card>
+  <Card title="Glass Fluid Pipe" icon="pipe-glass">
+    Functionally identical to a standard fluid pipe but fully transparent. The fluid flowing through it is rendered visibly, making it ideal for display builds or quick debugging.
+  </Card>
+  <Card title="Smart Fluid Pipe" icon="pipe-smart">
+    A pipe variant with a built-in filter slot. Only the fluid matching the configured filter is allowed to pass — all others are blocked. Useful when a single pipe junction carries multiple sources.
+  </Card>
+</CardGroup>
+
+Pipes connect automatically on placement. If you need to stop two adjacent pipes from connecting — for example, when routing two separate networks through the same area — use a Wrench to disconnect the shared face, or route one of the networks through Encased Pipes.
+
+## Mechanical Pump
+
+The Mechanical Pump is what makes fluid move. Without at least one pump in the network, fluid stays completely stationary — gravity has no effect on pipe-transported fluids in Create.
+
+A pump must receive rotational power from a connected kinetic network. When powered, it pushes fluid **in the direction the pump faces** (indicated by the arrow on its model). Reversing the rotation source reverses the pump's arrow and flow direction.
+
+<Note>
+  A pump can push or pull fluid up to **16 blocks** in either direction along the pipe network (configurable via `mechanicalPumpRange` in the server config). Networks longer than this range require additional pumps placed in series.
+</Note>
+
+**Speed and throughput:** The faster the pump spins, the more fluid it transfers per tick. Low-RPM setups are fine for small tanks; high-throughput applications (boilers, fast-filling lines) benefit from higher speeds or multiple pumps.
+
+<Warning>
+  Fluid will not flow through a pipe network without a pump — there is no gravity-driven pipe flow in Create. If your pipes aren't moving fluid, check that a pump is present, powered, and oriented correctly.
+</Warning>
+
+## Pipe Network Rules
+
+All connected pipes that share a pump form a single **fluid network**. A few rules govern how networks behave:
+
+- **One fluid type per network.** If a network already carries water, a pump trying to push lava into it will be blocked. Use separate networks (or Smart Fluid Pipes with filters) for different fluids.
+- **Open-ended pipes act as I/O ports.** A pipe end exposed to the world (not connected to another pipe or block) can drain fluid from an adjacent fluid block or deposit fluid into the world, depending on flow direction (configurable via `pipesPlaceFluidSourceBlocks`).
+- **Different fluids won't mix.** Create's pipe system prevents cross-contamination — a network will refuse to accept a fluid that differs from what it already contains.
+
+## Nozzle
+
+A Nozzle attaches to the open end of a pipe and fans the fluid output outward in a radial spray pattern rather than a single stream. Common uses include:
+
+- Building a washing area where a wide spray covers a processing zone.
+- Filling cauldrons placed in front of the nozzle.
+- Decorative waterfalls or lava curtains.
+
+Place the Nozzle directly on the pipe end facing the direction you want fluid to spray.
+
+## Hose Pulley
+
+The Hose Pulley lowers a rope-connected hose into a large fluid body — an ocean, a lava lake, or any fluid pool — and pumps the fluid upward into your pipe network. It's one of Create's infinite fluid sources.
+
+<Steps>
+  <Step title="Set up the Pulley mechanism">
+    Mount a Rope Pulley above the fluid source and connect it to a rotational power source. The pulley lowers the hose block-by-block into the fluid.
+  </Step>
+  <Step title="Connect to a pipe network">
+    Attach a Fluid Pipe and Mechanical Pump to the Hose Pulley's output port. The pump draws the fluid up through the hose.
+  </Step>
+  <Step title="Configure infinite-source behaviour">
+    By default the Hose Pulley requires at least **10,000** fluid source blocks to consider the source infinite (`hosePulleyBlockThreshold`). Below this threshold it drains the source destructively. Adjust this in the server config, or set it to `-1` to disable the check entirely.
+  </Step>
+</Steps>
+
+<Note>
+  The Hose Pulley can reach up to **128 blocks** downward (`hosePulleyRange`). For deep fluid pockets (e.g., deep-ocean floors or sub-bedrock voids in modded worlds) you may need to raise this limit.
+</Note>
+
+## Fluid Drain
+
+The Fluid Drain extracts fluid directly from the world at a target block position. Place it adjacent to a fluid block and connect a pipe network to its output. It works similarly to an open-ended pipe but gives you precise control over extraction point without needing to submerge pipe ends.
+
+## Spout
+
+The Spout fills fluid containers — glass bottles, buckets, Copper Cans — using fluid drawn from a connected pipe network. It requires rotational power to operate.
+
+Place the Spout facing downward above a Depot, Belt, or other item surface. When an item that can accept fluid passes underneath, the Spout fills it automatically and ejects the filled container.
+
+<Tip>
+  Addon developers can register custom fluid-filling interactions for their own items using the `BlockSpoutingBehaviour` API. This allows a Spout to fill non-vanilla containers or trigger special effects when a specific fluid is dispensed.
+</Tip>
+
+## Tips and Performance Notes
+
+<Tip>
+  Wear **Goggles** (or install Goggle-equivalent equipment) and look at any pipe segment to see an overlay showing the current flow direction and the fluid type being transported. This is invaluable when debugging a network.
+</Tip>
+
+<Info>
+  Fluid pipes render particle effects while transporting fluid. At very high flow speeds these particles are suppressed automatically to protect performance. If you notice particles missing on a fast network, this is expected behaviour — the fluid is still flowing correctly.
+</Info>
